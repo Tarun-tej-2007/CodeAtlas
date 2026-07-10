@@ -1,30 +1,34 @@
-from pwdlib import PasswordHash
-from pwdlib.exceptions import PwdlibError
+import bcrypt
 
 class PasswordService:
     """
-    Reusable utility service wrapping the modern pwdlib hash manager.
+    Reusable utility service wrapping the standard bcrypt hashing library.
     
-    Argon2id is selected as the default algorithm because it is the current OWASP 
-    recommendation, offering excellent memory-hard resistance against GPU/ASIC-based 
-    brute-forcing attacks and side-channel timing leaks.
+    Bcrypt is selected for secure password hashing and verification to ensure 
+    compatibility and resistance against hardware brute-forcing attacks.
     """
-    _hasher = PasswordHash.recommended()
 
     @classmethod
     def hash_password(cls, password: str) -> str:
         """
-        Hashes a raw password using the recommended Argon2id crypt parameters.
+        Hashes a raw password string using bcrypt with a randomized salt.
+        Never logs the raw password or its parameters.
         """
-        return cls._hasher.hash(password)
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+        return hashed.decode("utf-8")
 
     @classmethod
     def verify_password(cls, password: str, hashed_password: str) -> bool:
         """
-        Validates a raw password input against a stored hash record.
+        Verifies a raw password against its stored bcrypt hash.
+        Never logs raw password credentials or comparison states.
         """
         try:
-            return cls._hasher.verify(password, hashed_password)
-        except PwdlibError:
-            # Handles hash mismatch, malformed hash inputs, or verification failures
+            return bcrypt.checkpw(
+                password.encode("utf-8"),
+                hashed_password.encode("utf-8")
+            )
+        except Exception:
+            # Catch comparison errors or malformed hash structures safely without logging details
             return False
