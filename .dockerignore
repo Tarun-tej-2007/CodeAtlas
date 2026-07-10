@@ -1,0 +1,13 @@
+.git
+.github
+**/venv
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+**/.next
+.env
+.env.*
+README.md
+docs
+.vscode
+.idea

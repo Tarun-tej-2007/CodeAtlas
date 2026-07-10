@@ -1,0 +1,128 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: codeatlas-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: codeatlas
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - codeatlas-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d codeatlas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: codeatlas-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - codeatlas-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: docker/server/Dockerfile
+    container_name: codeatlas-server
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server:/app
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/codeatlas
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET=${JWT_SECRET:-supersecretjwtkey123!}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - codeatlas-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  analysis-engine:
+    build:
+      context: .
+      dockerfile: docker/analysis-engine/Dockerfile
+    container_name: codeatlas-analysis-engine
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./analysis-engine:/app
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/codeatlas
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - codeatlas-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  client:
+    build:
+      context: .
+      dockerfile: docker/client/Dockerfile
+      target: development
+    container_name: codeatlas-client
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://server:8000
+    depends_on:
+      server:
+        condition: service_healthy
+      analysis-engine:
+        condition: service_healthy
+    networks:
+      - codeatlas-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+networks:
+  codeatlas-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
