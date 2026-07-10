@@ -17,7 +17,14 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://redis:6379/0"
 
     # Security Configuration
-    JWT_SECRET: str = "your-super-secret-key"
+    # SECRET_KEY is required for cryptographic token signing.
+    # The application will fail to start if it is missing from the environment/env file.
+    SECRET_KEY: str
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    JWT_ISSUER: str = "codeatlas"
+    JWT_AUDIENCE: str = "codeatlas-api"
 
     # Third-Party AI Services API keys
     OPENAI_API_KEY: str = ""
