@@ -48,7 +48,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/codeatlas
       - REDIS_URL=redis://redis:6379/0
-      - JWT_SECRET=${JWT_SECRET:-supersecretjwtkey123!}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_AUDIENCE=${JWT_AUDIENCE}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       postgres:
