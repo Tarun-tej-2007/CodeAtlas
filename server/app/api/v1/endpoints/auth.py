@@ -4,12 +4,15 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.services.auth import AuthService
-from app.schemas.auth import UserRegister, AuthResponse
+from app.schemas.auth import UserRegister, AuthResponse, UserLogin
 from app.core.exceptions import (
     EmailAlreadyExistsError,
     UsernameAlreadyExistsError,
     RegistrationFailedError,
+    InvalidCredentialsError,
+    InactiveUserError,
 )
+
 
 router = APIRouter()
 
@@ -50,4 +53,37 @@ def register(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
+
+@router.post(
+    "/login",
+    response_model=AuthResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Authenticate an existing user",
+    description="Authenticates the user with username/email and password, returning tokens."
+)
+def login(
+    data: UserLogin,
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Handles user login request.
+    Translates backend domain exceptions into standard HTTP exception payloads.
+    """
+    auth_service = AuthService(db)
+    try:
+        return auth_service.login(
+            identifier=data.identifier,
+            password=data.password,
+        )
+    except InvalidCredentialsError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username/email or password",
+        )
+    except InactiveUserError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e) or "User account is deactivated",
+        )
+
 
