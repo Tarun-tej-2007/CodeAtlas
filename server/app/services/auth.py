@@ -7,6 +7,7 @@ from app.models.user import User
 from app.repositories.user import UserRepository
 from app.core.password import PasswordService
 from app.core.jwt import JWTService, TokenType
+from app.core.config import settings
 from app.core.exceptions import (
     InvalidCredentialsError,
     InactiveUserError,
@@ -191,6 +192,38 @@ class AuthService:
         self._validate_user_active(user)
 
         return user
+
+    def refresh_token(self, refresh_token: str) -> dict[str, Any]:
+        """
+        Validates a refresh token and generates a new short-lived access token.
+        """
+        # Decode and validate refresh token (ensures signature, expiration, and TokenType.REFRESH)
+        payload = self.decode_and_validate_token(refresh_token, expected_type=TokenType.REFRESH)
+        subject = payload.get("sub")
+
+        if not subject:
+            raise InvalidTokenError("Could not validate credentials")
+
+        try:
+            user_id = uuid.UUID(subject)
+        except ValueError as e:
+            raise InvalidTokenError("Malformed user credentials") from e
+
+        user = self.user_repo.get_by_id(user_id)
+        if not user:
+            raise UserNotFoundError("User not found")
+
+        self._validate_user_active(user)
+
+        # Generate a new access token
+        access_token = self.create_access_token(user.id)
+
+        return {
+            "access_token": access_token,
+            "token_type": "Bearer",
+            "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        }
+
 
 
 
