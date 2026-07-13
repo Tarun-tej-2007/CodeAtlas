@@ -1,5 +1,6 @@
 from typing import Any
 import uuid
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -8,6 +9,7 @@ from app.repositories.user import UserRepository
 from app.core.password import PasswordService
 from app.core.jwt import JWTService, TokenType
 from app.core.config import settings
+from app.services.redis import RedisService
 from app.core.exceptions import (
     InvalidCredentialsError,
     InactiveUserError,
@@ -24,9 +26,15 @@ class AuthService:
     Integrates password operations, JWT claims management, and database state retrieval.
     """
 
-    def __init__(self, db: Session, user_repo: UserRepository | None = None) -> None:
+    def __init__(
+        self,
+        db: Session,
+        user_repo: UserRepository | None = None,
+        redis_service: RedisService | None = None,
+    ) -> None:
         self.db = db
         self.user_repo = user_repo or UserRepository(db)
+        self.redis_service = redis_service or RedisService()
 
     def hash_password(self, password: str) -> str:
         """
@@ -199,6 +207,15 @@ class AuthService:
         """
         # Decode and validate refresh token (ensures signature, expiration, and TokenType.REFRESH)
         payload = self.decode_and_validate_token(refresh_token, expected_type=TokenType.REFRESH)
+        
+        jti = payload.get("jti")
+        if not jti:
+            raise InvalidTokenError("Missing JWT ID claim")
+
+        # Assert token is not revoked in Redis
+        if self.redis_service.is_token_revoked(jti):
+            raise InvalidTokenError("Token has been revoked")
+
         subject = payload.get("sub")
 
         if not subject:
@@ -223,6 +240,33 @@ class AuthService:
             "token_type": "Bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         }
+
+    def logout(self, refresh_token: str) -> None:
+        """
+        Invalidates a refresh token by adding its JTI to the Redis blocklist.
+        """
+        # Decode, verify signature, expiration, and REFRESH token type
+        payload = self.decode_and_validate_token(refresh_token, expected_type=TokenType.REFRESH)
+
+        jti = payload.get("jti")
+        if not jti:
+            raise InvalidTokenError("Missing JWT ID claim")
+
+        # Idempotency check: if already revoked, exit silently
+        if self.redis_service.is_token_revoked(jti):
+            return
+
+        exp = payload.get("exp")
+        if not exp:
+            raise InvalidTokenError("Missing token expiration claim")
+
+        # Calculate remaining lifetime in seconds
+        now_epoch = int(datetime.now(timezone.utc).timestamp())
+        expires_in = exp - now_epoch
+
+        # Store the token ID in Redis with TTL matching remaining lifetime
+        self.redis_service.revoke_token(jti, expires_in)
+
 
 
 
