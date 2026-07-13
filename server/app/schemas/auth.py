@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, ConfigDict, EmailStr
 
 class UserRegister(BaseModel):
@@ -103,4 +104,19 @@ class UserLogin(BaseModel):
         if not v:
             raise ValueError("Password must not be empty")
         return v
+
+class CurrentUserResponse(BaseModel):
+    """
+    Pydantic schema representing the current user profile response.
+    Exposes only safe public profile parameters.
+    """
+    id: uuid.UUID
+    username: str
+    email: EmailStr
+    full_name: str | None = Field(default=None, description="User full name.")
+    is_active: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
 
