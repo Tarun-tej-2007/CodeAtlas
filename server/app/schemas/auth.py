@@ -119,4 +119,34 @@ class CurrentUserResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class TokenRefreshRequest(BaseModel):
+    """
+    Request schema validating refresh token input payload.
+    """
+    refresh_token: str = Field(
+        ...,
+        min_length=1,
+        description="A valid JSON Web Refresh Token."
+    )
+
+    @field_validator("refresh_token")
+    @classmethod
+    def trim_token(cls, v: str) -> str:
+        """
+        Trims leading and trailing whitespace from the token.
+        """
+        trimmed = v.strip() if v else ""
+        if not trimmed:
+            raise ValueError("Refresh token must not be empty or whitespace only")
+        return trimmed
+
+class TokenRefreshResponse(BaseModel):
+    """
+    Response schema containing the new access token and its expiration timeframe.
+    """
+    access_token: str
+    token_type: str = "Bearer"
+    expires_in: int
+
+
 

@@ -5,7 +5,14 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.services.auth import AuthService
-from app.schemas.auth import UserRegister, AuthResponse, UserLogin, CurrentUserResponse
+from app.schemas.auth import (
+    UserRegister,
+    AuthResponse,
+    UserLogin,
+    CurrentUserResponse,
+    TokenRefreshRequest,
+    TokenRefreshResponse,
+)
 from app.core.dependencies import get_current_user
 from app.core.exceptions import (
     EmailAlreadyExistsError,
@@ -14,7 +21,9 @@ from app.core.exceptions import (
     InvalidCredentialsError,
     InactiveUserError,
     UserNotFoundError,
+    InvalidTokenError,
 )
+
 
 
 
@@ -119,6 +128,41 @@ def get_me(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e) or "User account is deactivated",
         )
+
+@router.post(
+    "/refresh",
+    response_model=TokenRefreshResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Acquire a new access token",
+    description="Validates a refresh token and returns a newly generated access token."
+)
+def refresh(
+    data: TokenRefreshRequest,
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Handles refresh token request.
+    Translates backend domain exceptions into standard HTTP exception payloads.
+    """
+    auth_service = AuthService(db)
+    try:
+        return auth_service.refresh_token(data.refresh_token)
+    except InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e) or "Invalid token or signature has expired",
+        )
+    except UserNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e) or "User not found",
+        )
+    except InactiveUserError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e) or "User account is deactivated",
+        )
+
 
 
 
