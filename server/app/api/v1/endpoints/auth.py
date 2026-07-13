@@ -1,17 +1,21 @@
+import uuid
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.services.auth import AuthService
-from app.schemas.auth import UserRegister, AuthResponse, UserLogin
+from app.schemas.auth import UserRegister, AuthResponse, UserLogin, CurrentUserResponse
+from app.core.dependencies import get_current_user
 from app.core.exceptions import (
     EmailAlreadyExistsError,
     UsernameAlreadyExistsError,
     RegistrationFailedError,
     InvalidCredentialsError,
     InactiveUserError,
+    UserNotFoundError,
 )
+
 
 
 router = APIRouter()
@@ -85,5 +89,36 @@ def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e) or "User account is deactivated",
         )
+
+@router.get(
+    "/me",
+    response_model=CurrentUserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve current user profile",
+    description="Returns the profile details of the currently authenticated user."
+)
+def get_me(
+    current_user_id: uuid.UUID = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    HTTP endpoint to retrieve the current user profile.
+    Translates domain-specific errors (UserNotFoundError, InactiveUserError) into standard HTTP responses.
+    """
+    auth_service = AuthService(db)
+    try:
+        return auth_service.get_current_user_profile(current_user_id)
+
+    except UserNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e) or "User not found",
+        )
+    except InactiveUserError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e) or "User account is deactivated",
+        )
+
 
 

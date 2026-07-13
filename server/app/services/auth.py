@@ -179,5 +179,20 @@ class AuthService:
             "token_type": "Bearer",
         }
 
+    def get_current_user_profile(self, user_id: uuid.UUID) -> User:
+        """
+        Retrieves the profile of the currently authenticated user by ID.
+        Ensures the user exists and is active.
+        """
+        user = self.user_repo.get_by_id(user_id)
+        if not user:
+            raise UserNotFoundError("User not found")
+
+        self._validate_user_active(user)
+
+        return user
+
+
+
 
 
