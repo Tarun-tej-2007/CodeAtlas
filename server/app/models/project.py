@@ -1,10 +1,10 @@
 import uuid
 from typing import TYPE_CHECKING
-from sqlalchemy import String, Enum, ForeignKey, UniqueConstraint
+from sqlalchemy import String, Enum, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 from app.models.base import TimestampMixin, UUIDMixin
-from app.models.enums import Visibility
+from app.models.enums import ProjectVisibility
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -25,16 +25,21 @@ class Project(Base, UUIDMixin, TimestampMixin):
         index=True,
     )
     name: Mapped[str] = mapped_column(
-        String(100),
+        String(150),
         nullable=False,
+    )
+    slug: Mapped[str] = mapped_column(
+        String(150),
+        nullable=False,
+        index=True,
     )
     description: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
     )
-    visibility: Mapped[Visibility] = mapped_column(
-        Enum(Visibility, native_enum=False),
-        default=Visibility.PRIVATE,
+    visibility: Mapped[ProjectVisibility] = mapped_column(
+        Enum(ProjectVisibility, native_enum=False),
+        default=ProjectVisibility.PRIVATE,
         nullable=False,
     )
 
@@ -50,8 +55,9 @@ class Project(Base, UUIDMixin, TimestampMixin):
     )
 
     def __repr__(self) -> str:
-        return f"<Project(id={self.id}, owner_id={self.owner_id}, name='{self.name}', visibility='{self.visibility}')>"
+        return f"<Project(id={self.id}, owner_id={self.owner_id}, name='{self.name}', slug='{self.slug}', visibility='{self.visibility}')>"
 
     __table_args__ = (
-        UniqueConstraint("owner_id", "name", name="uq_projects_owner_name"),
+        UniqueConstraint("owner_id", "slug", name="uq_projects_owner_slug"),
+        Index("ix_projects_created_at", "created_at"),
     )

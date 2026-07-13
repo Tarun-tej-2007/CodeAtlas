@@ -1,4 +1,13 @@
-from app.schemas.auth import UserRegister, UserResponse, AuthResponse, UserLogin, CurrentUserResponse, TokenRefreshRequest, TokenRefreshResponse
+from app.schemas.auth import (
+    UserRegister,
+    UserResponse,
+    AuthResponse,
+    UserLogin,
+    CurrentUserResponse,
+    TokenRefreshRequest,
+    TokenRefreshResponse,
+)
+from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
 
 __all__ = [
     "UserRegister",
@@ -8,7 +17,7 @@ __all__ = [
     "CurrentUserResponse",
     "TokenRefreshRequest",
     "TokenRefreshResponse",
+    "ProjectCreate",
+    "ProjectUpdate",
+    "ProjectResponse",
 ]
-
-
-
