@@ -10,6 +10,11 @@ class Visibility(str, enum.Enum):
     PRIVATE = "PRIVATE"
     INTERNAL = "INTERNAL"
 
+class ProjectVisibility(str, enum.Enum):
+    PRIVATE = "PRIVATE"
+    PUBLIC = "PUBLIC"
+
+
 class RepositoryProvider(str, enum.Enum):
     GITHUB = "GITHUB"
     GITLAB = "GITLAB"

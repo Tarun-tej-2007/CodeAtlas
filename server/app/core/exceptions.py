@@ -46,3 +46,10 @@ class RegistrationFailedError(AuthError):
     """
     pass
 
+class ProjectNotFoundError(Exception):
+    """
+    Raised when a project UUID lookup fails.
+    """
+    pass
+
+
