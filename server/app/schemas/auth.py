@@ -67,3 +67,40 @@ class AuthResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "Bearer"
+
+class UserLogin(BaseModel):
+    """
+    Pydantic schema validating user login request credentials.
+    """
+    identifier: str = Field(
+        ...,
+        min_length=1,
+        description="Username or email address."
+    )
+    password: str = Field(
+        ...,
+        min_length=1,
+        description="User password."
+    )
+
+    @field_validator("identifier")
+    @classmethod
+    def trim_identifier(cls, v: str) -> str:
+        """
+        Trims leading and trailing whitespace from the username/email identifier.
+        """
+        trimmed = v.strip() if v else ""
+        if not trimmed:
+            raise ValueError("Identifier must not be empty or whitespace only")
+        return trimmed
+
+    @field_validator("password")
+    @classmethod
+    def non_empty_password(cls, v: str) -> str:
+        """
+        Ensures password is not empty.
+        """
+        if not v:
+            raise ValueError("Password must not be empty")
+        return v
+

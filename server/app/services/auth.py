@@ -161,4 +161,23 @@ class AuthService:
             "token_type": "Bearer",
         }
 
+    def login(self, identifier: str, password: str) -> dict[str, Any]:
+        """
+        Authenticates a user by email/username and issues new JWT access and refresh tokens.
+        """
+        # Call the existing authenticate_user (it handles checks, verification, and active state)
+        user = self.authenticate_user(identifier, password)
+
+        # Generate tokens
+        access_token = self.create_access_token(user.id)
+        refresh_token = self.create_refresh_token(user.id)
+
+        return {
+            "user": user,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "Bearer",
+        }
+
+
 
