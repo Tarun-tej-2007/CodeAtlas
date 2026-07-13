@@ -27,3 +27,22 @@ class UserNotFoundError(AuthError):
     Raised when a user UUID primary key lookup fails to return any DB record.
     """
     pass
+
+class EmailAlreadyExistsError(AuthError):
+    """
+    Raised when user tries to register with an email that is already registered.
+    """
+    pass
+
+class UsernameAlreadyExistsError(AuthError):
+    """
+    Raised when user tries to register with a username that is already registered.
+    """
+    pass
+
+class RegistrationFailedError(AuthError):
+    """
+    Raised when a general database or persistence operation failure occurs during registration.
+    """
+    pass
+

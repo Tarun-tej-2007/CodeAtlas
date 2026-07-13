@@ -40,3 +40,26 @@ class UserRepository:
             or_(User.email == identifier, User.username == identifier)
         )
         return self.db.scalar(statement)
+
+    def create(self, user: User) -> User:
+        """
+        Adds a new User entity to the database session and flushes it to populate generated fields.
+        """
+        self.db.add(user)
+        self.db.flush()
+        return user
+
+    def exists_by_email(self, email: str) -> bool:
+        """
+        Checks if a user with the given email address exists.
+        """
+        statement = select(User.id).where(User.email == email)
+        return self.db.scalar(statement) is not None
+
+    def exists_by_username(self, username: str) -> bool:
+        """
+        Checks if a user with the given username exists.
+        """
+        statement = select(User.id).where(User.username == username)
+        return self.db.scalar(statement) is not None
+

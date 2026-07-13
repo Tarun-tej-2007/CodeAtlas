@@ -2,6 +2,7 @@ from typing import Any
 import uuid
 from sqlalchemy.orm import Session
 
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.core.password import PasswordService
@@ -11,6 +12,9 @@ from app.core.exceptions import (
     InactiveUserError,
     InvalidTokenError,
     UserNotFoundError,
+    EmailAlreadyExistsError,
+    UsernameAlreadyExistsError,
+    RegistrationFailedError,
 )
 
 class AuthService:
@@ -100,3 +104,61 @@ class AuthService:
         self._validate_user_active(user)
 
         return user
+
+    def register(
+        self,
+        username: str,
+        email: str,
+        password: str,
+    ) -> dict[str, Any]:
+        """
+        Registers a new user on the platform.
+        Coordinates validation, transaction-safe persistence, and authentication token issuance.
+        """
+        # Check whether email already exists
+        if self.user_repo.exists_by_email(email):
+            raise EmailAlreadyExistsError("Email is already registered")
+
+        # Check whether username already exists
+        if self.user_repo.exists_by_username(username):
+            raise UsernameAlreadyExistsError("Username is already taken")
+
+        # Hash password using existing password service
+        password_hash = self.hash_password(password)
+
+        # Create the User entity
+        user = User(
+            email=email,
+            username=username,
+            password_hash=password_hash,
+        )
+
+        # Persist the user transactionally
+        try:
+            self.user_repo.create(user)
+            self.db.commit()
+            self.db.refresh(user)
+        except IntegrityError as e:
+            self.db.rollback()
+            # Double check database constraints under concurrency
+            if self.user_repo.exists_by_email(email):
+                raise EmailAlreadyExistsError("Email is already registered") from e
+            if self.user_repo.exists_by_username(username):
+                raise UsernameAlreadyExistsError("Username is already taken") from e
+            raise RegistrationFailedError("Database save failed during registration") from e
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise RegistrationFailedError("Registration failed due to a database error") from e
+
+        # Generate JWT tokens after a successful database commit
+        access_token = self.create_access_token(user.id)
+        refresh_token = self.create_refresh_token(user.id)
+
+        return {
+            "user": user,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "Bearer",
+        }
+
+
