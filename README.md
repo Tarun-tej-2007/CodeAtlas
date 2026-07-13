@@ -65,4 +65,193 @@ This command will:
 4. **Non-Root System Users**: For improved runtime security, all application services execute under non-root system users (`nextjs` for Next.js, `appuser` for FastAPI).
 5. **Bridge Networking**: The containers are assigned to `codeatlas-network`. Services refer to each other by name (e.g. `http://codeatlas-server:8000`) instead of `localhost`.
 6. **Health Checks & Start Ordering**: App services depend on Postgres and Redis being fully initialized and reporting "healthy" via Docker healthchecks before they spin up, preventing startup crashes.
-7. **Built-in Python Health Check**: FastAPI services execute simple, native Python HTTP calls (`urllib.request`) to run healthchecks, avoiding image bloat from `curl`/`wget`.
+7. **Built-in Python Health Check**: FastAPI services execute simple, native Python HTTP calls (`urllib.request`) to run healthchecks, avoiding image bloat from `curl`/`wget`.
+
+
+
+# Getting Started
+
+Follow the steps below to set up the CodeAtlas development environment on your local machine.
+
+## Prerequisites
+
+Make sure the following software is installed:
+
+* Git
+* Docker Desktop (Docker Engine + Docker Compose)
+* Python 3.12+ (optional for local development)
+* Node.js 20+ (optional for frontend development)
+
+Verify the installations:
+
+```bash
+git --version
+docker --version
+docker compose version
+python --version
+node --version
+```
+
+---
+
+## 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd CodeAtlas
+```
+
+---
+
+## 2. Create the Environment File
+
+Inside the `server` directory, create a `.env` file.
+
+Example:
+
+```env
+DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/codeatlas
+REDIS_URL=redis://redis:6379/0
+
+SECRET_KEY=your-super-secret-key
+JWT_ISSUER=codeatlas
+JWT_AUDIENCE=codeatlas-users
+
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+```
+
+> **Note:** Never commit your `.env` file to the repository.
+
+---
+
+## 3. Start the Development Environment
+
+From the project root:
+
+```bash
+docker compose up --build -d
+```
+
+This command will start:
+
+* PostgreSQL
+* Redis
+* FastAPI Backend
+* Analysis Engine
+* Frontend
+
+---
+
+## 4. Verify the Containers
+
+```bash
+docker compose ps
+```
+
+All containers should show a **Running** or **Healthy** status.
+
+To inspect logs:
+
+```bash
+docker compose logs -f
+```
+
+---
+
+## 5. Apply Database Migrations
+
+Run Alembic migrations:
+
+```bash
+docker compose exec server alembic upgrade head
+```
+
+---
+
+## 6. Access the Application
+
+Once everything is running:
+
+| Service           | URL                         |
+| ----------------- | --------------------------- |
+| Frontend          | http://localhost:3000       |
+| Backend API       | http://localhost:8000       |
+| API Documentation | http://localhost:8000/docs  |
+| ReDoc             | http://localhost:8000/redoc |
+
+---
+
+## 7. Stopping the Environment
+
+Stop all running containers:
+
+```bash
+docker compose down
+```
+
+To remove associated volumes as well:
+
+```bash
+docker compose down -v
+```
+
+---
+
+## Development Workflow
+
+Create a new feature branch before making changes:
+
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b feature/<feature-name>
+```
+
+Commit your work with clear, descriptive commit messages:
+
+```bash
+git add .
+git commit -m "feat: describe your changes"
+git push -u origin feature/<feature-name>
+```
+
+Open a Pull Request to `develop` when your work is complete.
+
+---
+
+## Troubleshooting
+
+### Rebuild the containers
+
+```bash
+docker compose down
+docker compose up --build -d
+```
+
+### View backend logs
+
+```bash
+docker compose logs -f server
+```
+
+### Restart a service
+
+```bash
+docker compose restart server
+```
+
+---
+
+## Project Structure
+
+```text
+CodeAtlas/
+├── analysis-engine/
+├── client/
+├── server/
+├── docker-compose.yml
+└── README.md
+```
+
+Happy coding! 🚀
