@@ -163,6 +163,30 @@ def refresh(
             detail=str(e) or "User account is deactivated",
         )
 
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Logout a user session",
+    description="Invalidates the provided refresh token by adding its JTI to the Redis blocklist."
+)
+def logout(
+    data: TokenRefreshRequest,
+    db: Session = Depends(get_db)
+) -> None:
+    """
+    Handles user logout request.
+    Invalidates the refresh token and returns HTTP 204 No Content.
+    """
+    auth_service = AuthService(db)
+    try:
+        auth_service.logout(data.refresh_token)
+    except InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e) or "Invalid token or signature has expired",
+        )
+
+
 
 
 
