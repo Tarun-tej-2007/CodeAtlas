@@ -1,9 +1,11 @@
 import uuid
 import re
+import math
 from sqlalchemy.orm import Session
 from app.models.project import Project
+from app.models.enums import ProjectVisibility
 from app.repositories.project import ProjectRepository
-from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse, PaginatedProjectResponse
 from app.core.exceptions import ProjectNotFoundError
 
 class ProjectService:
@@ -80,6 +82,47 @@ class ProjectService:
         Retrieves all project workspaces owned by the specified user.
         """
         return self.project_repo.list_by_owner(owner_id)
+
+    def list_projects_paginated(
+        self,
+        owner_id: uuid.UUID,
+        page: int = 1,
+        size: int = 20,
+        sort_by: str = "created_at",
+        order: str = "desc",
+        search: str | None = None,
+        visibility: ProjectVisibility | None = None,
+    ) -> PaginatedProjectResponse:
+        """
+        Orchestrates paginated listing of projects visible to the given user,
+        calculating pagination metadata and wrapping results in PaginatedProjectResponse.
+        """
+        items, total = self.project_repo.list_projects_paginated(
+            owner_id=owner_id,
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            order=order,
+            search=search,
+            visibility=visibility,
+        )
+
+        pages = math.ceil(total / size) if total > 0 else 0
+        count = len(items)
+        has_next = page < pages
+        has_previous = page > 1 and page <= (pages + 1)
+
+        return PaginatedProjectResponse(
+            items=[ProjectResponse.model_validate(item) for item in items],
+            count=count,
+            total=total,
+            page=page,
+            size=size,
+            pages=pages,
+            has_next=has_next,
+            has_previous=has_previous,
+        )
+
 
     def update_project(self, project_id: uuid.UUID, data: ProjectUpdate) -> Project:
         """
