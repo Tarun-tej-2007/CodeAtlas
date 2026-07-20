@@ -19,6 +19,23 @@ class ProjectRepository:
         """
         return self.db.get(Project, project_id)
 
+    def get_by_id_and_access(
+        self, project_id: uuid.UUID, requesting_user_id: uuid.UUID
+    ) -> Project | None:
+        """
+        Retrieves a Project by primary key if it is accessible to the requesting user
+        (either owned by the user or marked with PUBLIC visibility).
+        """
+        statement = select(Project).where(
+            Project.id == project_id,
+            or_(
+                Project.owner_id == requesting_user_id,
+                Project.visibility == ProjectVisibility.PUBLIC,
+            ),
+        )
+        return self.db.scalar(statement)
+
+
     def get_by_slug(self, owner_id: uuid.UUID, slug: str) -> Project | None:
         """
         Retrieves a Project owned by the user with the specified slug.

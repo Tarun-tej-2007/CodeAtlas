@@ -77,6 +77,17 @@ class ProjectService:
             raise ProjectNotFoundError("Project not found")
         return project
 
+    def get_project_with_access(self, project_id: uuid.UUID, requesting_user_id: uuid.UUID) -> Project:
+        """
+        Retrieves a project by UUID if accessible to the requesting user.
+        Raises ProjectNotFoundError if project does not exist or user lacks read permission.
+        """
+        project = self.project_repo.get_by_id_and_access(project_id, requesting_user_id)
+        if not project:
+            raise ProjectNotFoundError("Project not found")
+        return project
+
+
     def list_projects(self, owner_id: uuid.UUID) -> list[Project]:
         """
         Retrieves all project workspaces owned by the specified user.

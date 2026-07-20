@@ -15,6 +15,8 @@ from app.schemas.project import (
     PaginatedProjectResponse,
 )
 from app.services.project import ProjectService
+from app.core.exceptions import ProjectNotFoundError
+
 
 router = APIRouter()
 
@@ -139,6 +141,23 @@ def list_projects(
     status_code=status.HTTP_200_OK,
     summary="Get project details",
     description="Fetch complete details for a specific project by UUID.",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Project details retrieved successfully."
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Missing or invalid access token credentials."
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Project not found or requester lacks read permission."
+        },
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+            "description": "Malformed project_id UUID parameter."
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "description": "Unexpected server error."
+        },
+    },
 )
 def get_project(
     project_id: uuid.UUID,
@@ -146,13 +165,20 @@ def get_project(
     db: Session = Depends(get_db),
 ) -> Any:
     """
-    HTTP endpoint placeholder to retrieve a single project by ID.
-    CRUD business logic will be implemented in subsequent steps.
+    HTTP endpoint to fetch complete details of a project by UUID.
+    Returns 404 if project does not exist or if private project is owned by another user.
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint logic not implemented yet.",
-    )
+    project_service = ProjectService(db)
+    try:
+        return project_service.get_project_with_access(
+            project_id=project_id, requesting_user_id=current_user_id
+        )
+    except ProjectNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e) or "Project not found",
+        )
+
 
 
 @router.patch(
