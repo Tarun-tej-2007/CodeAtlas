@@ -7,7 +7,7 @@ from app.schemas.auth import (
     TokenRefreshRequest,
     TokenRefreshResponse,
 )
-from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
+from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse, PaginatedProjectResponse
 
 __all__ = [
     "UserRegister",
@@ -20,4 +20,6 @@ __all__ = [
     "ProjectCreate",
     "ProjectUpdate",
     "ProjectResponse",
+    "PaginatedProjectResponse",
 ]
+
