@@ -52,4 +52,11 @@ class ProjectNotFoundError(Exception):
     """
     pass
 
+class ProjectForbiddenError(Exception):
+    """
+    Raised when an authenticated user attempts to modify or delete a project they do not own.
+    """
+    pass
+
+
 

@@ -6,7 +6,8 @@ from app.models.project import Project
 from app.models.enums import ProjectVisibility
 from app.repositories.project import ProjectRepository
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse, PaginatedProjectResponse
-from app.core.exceptions import ProjectNotFoundError
+from app.core.exceptions import ProjectNotFoundError, ProjectForbiddenError
+
 
 class ProjectService:
     """
@@ -135,27 +136,43 @@ class ProjectService:
         )
 
 
-    def update_project(self, project_id: uuid.UUID, data: ProjectUpdate) -> Project:
+    def update_project(
+
+        self,
+        project_id: uuid.UUID,
+        data: ProjectUpdate,
+        requesting_user_id: uuid.UUID | None = None,
+    ) -> Project:
         """
-        Updates project attributes. If project name is updated, regenerates and
-        updates the project's unique slug.
+        Updates project attributes. If requesting_user_id is supplied, validates ownership.
+        Regenerates slug if project name changes.
+        Raises ProjectNotFoundError if project does not exist (or is private to another user).
+        Raises ProjectForbiddenError if public project is owned by another user.
         """
         project = self.get_project(project_id)
-        
+
+        if requesting_user_id is not None and project.owner_id != requesting_user_id:
+            if project.visibility == ProjectVisibility.PRIVATE:
+                raise ProjectNotFoundError("Project not found")
+            raise ProjectForbiddenError("You do not have permission to update this project")
+
         if data.name is not None:
             project.name = data.name
-            project.slug = self._generate_unique_slug(project.owner_id, data.name, current_project_id=project_id)
-            
+            project.slug = self._generate_unique_slug(
+                project.owner_id, data.name, current_project_id=project_id
+            )
+
         if data.description is not None:
             project.description = data.description
-            
+
         if data.visibility is not None:
             project.visibility = data.visibility
-            
+
         self.project_repo.update(project)
         self.db.commit()
         self.db.refresh(project)
         return project
+
 
     def delete_project(self, project_id: uuid.UUID) -> None:
         """
