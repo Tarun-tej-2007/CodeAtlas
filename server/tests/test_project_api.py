@@ -553,3 +553,86 @@ def test_update_project_validation_failures(client, payload):
     assert response.status_code == 422
 
 
+# --- DELETE /api/v1/projects/{project_id} Tests ---
+
+def test_delete_project_owner_success(client):
+    reg = client.post(
+        "/api/v1/auth/register",
+        json={"username": "delowner", "email": "delowner@example.com", "password": "Password123!"}
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['access_token']}"}
+
+    create_res = client.post("/api/v1/projects", headers=headers, json={"name": "Project To Delete"})
+    project_id = create_res.json()["id"]
+
+    del_res = client.delete(f"/api/v1/projects/{project_id}", headers=headers)
+    assert del_res.status_code == 204
+    assert del_res.content == b""
+
+    get_res = client.get(f"/api/v1/projects/{project_id}", headers=headers)
+    assert get_res.status_code == 404
+
+def test_delete_project_nonexistent_uuid(client):
+    reg = client.post(
+        "/api/v1/auth/register",
+        json={"username": "delnonexist", "email": "delnonexist@example.com", "password": "Password123!"}
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['access_token']}"}
+
+    fake_id = str(uuid.uuid4())
+    response = client.delete(f"/api/v1/projects/{fake_id}", headers=headers)
+    assert response.status_code == 404
+
+def test_delete_project_non_owner_attempts(client):
+    u_owner = client.post(
+        "/api/v1/auth/register",
+        json={"username": "delrealowner", "email": "delrealowner@example.com", "password": "Password123!"}
+    ).json()
+    u_other = client.post(
+        "/api/v1/auth/register",
+        json={"username": "delotheruser", "email": "delotheruser@example.com", "password": "Password123!"}
+    ).json()
+
+    pub_res = client.post(
+        "/api/v1/projects",
+        headers={"Authorization": f"Bearer {u_owner['access_token']}"},
+        json={"name": "Public Project Delete", "visibility": "PUBLIC"}
+    )
+    pub_id = pub_res.json()["id"]
+
+    res_forbidden = client.delete(
+        f"/api/v1/projects/{pub_id}",
+        headers={"Authorization": f"Bearer {u_other['access_token']}"}
+    )
+    assert res_forbidden.status_code == 403
+
+    priv_res = client.post(
+        "/api/v1/projects",
+        headers={"Authorization": f"Bearer {u_owner['access_token']}"},
+        json={"name": "Private Project Delete", "visibility": "PRIVATE"}
+    )
+    priv_id = priv_res.json()["id"]
+
+    res_notfound = client.delete(
+        f"/api/v1/projects/{priv_id}",
+        headers={"Authorization": f"Bearer {u_other['access_token']}"}
+    )
+    assert res_notfound.status_code == 404
+
+def test_delete_project_invalid_uuid(client):
+    reg = client.post(
+        "/api/v1/auth/register",
+        json={"username": "delinvuuid", "email": "delinvuuid@example.com", "password": "Password123!"}
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['access_token']}"}
+
+    response = client.delete("/api/v1/projects/invalid-uuid-str", headers=headers)
+    assert response.status_code == 422
+
+def test_delete_project_unauthenticated(client):
+    fake_id = str(uuid.uuid4())
+    response = client.delete(f"/api/v1/projects/{fake_id}")
+    assert response.status_code == 401
+
+
+

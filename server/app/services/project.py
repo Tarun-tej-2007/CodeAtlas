@@ -174,10 +174,23 @@ class ProjectService:
         return project
 
 
-    def delete_project(self, project_id: uuid.UUID) -> None:
+    def delete_project(
+        self,
+        project_id: uuid.UUID,
+        requesting_user_id: uuid.UUID | None = None,
+    ) -> None:
         """
-        Hard-deletes a project workspace.
+        Deletes a project workspace. If requesting_user_id is supplied, validates ownership.
+        Raises ProjectNotFoundError if project does not exist (or is private to another user).
+        Raises ProjectForbiddenError if public project is owned by another user.
         """
         project = self.get_project(project_id)
+
+        if requesting_user_id is not None and project.owner_id != requesting_user_id:
+            if project.visibility == ProjectVisibility.PRIVATE:
+                raise ProjectNotFoundError("Project not found")
+            raise ProjectForbiddenError("You do not have permission to delete this project")
+
         self.project_repo.delete(project)
         self.db.commit()
+

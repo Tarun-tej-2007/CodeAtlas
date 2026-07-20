@@ -255,7 +255,27 @@ def update_project(
     "/{project_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete project",
-    description="Delete a project workspace.",
+    description="Delete a project workspace. Only the project owner can delete the project.",
+    responses={
+        status.HTTP_204_NO_CONTENT: {
+            "description": "Project deleted successfully."
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Missing or invalid access token credentials."
+        },
+        status.HTTP_403_FORBIDDEN: {
+            "description": "Authenticated user is not the project owner."
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Project not found or private project owned by another user."
+        },
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+            "description": "Malformed project_id UUID parameter."
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "description": "Unexpected server error."
+        },
+    },
 )
 def delete_project(
     project_id: uuid.UUID,
@@ -263,10 +283,23 @@ def delete_project(
     db: Session = Depends(get_db),
 ) -> None:
     """
-    HTTP endpoint placeholder to delete a project.
-    CRUD business logic will be implemented in subsequent steps.
+    HTTP endpoint to delete a project workspace.
+    Only the project owner may delete the project.
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint logic not implemented yet.",
-    )
+    project_service = ProjectService(db)
+    try:
+        project_service.delete_project(
+            project_id=project_id,
+            requesting_user_id=current_user_id,
+        )
+    except ProjectNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e) or "Project not found",
+        )
+    except ProjectForbiddenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e) or "Forbidden",
+        )
+
