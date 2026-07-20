@@ -52,3 +52,17 @@ class ProjectResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class PaginatedProjectResponse(BaseModel):
+    """
+    Schema representing a paginated response of projects.
+    """
+    items: list[ProjectResponse] = Field(..., description="List of project items for the current page.")
+    count: int = Field(..., description="Number of items in the current page.")
+    total: int = Field(..., description="Total count matching query filters.")
+    page: int = Field(..., description="Current page number (1-indexed).")
+    size: int = Field(..., description="Page size.")
+    pages: int = Field(..., description="Total computed pages.")
+    has_next: bool = Field(..., description="Whether a next page exists.")
+    has_previous: bool = Field(..., description="Whether a previous page exists.")
+
