@@ -1,6 +1,7 @@
 import uuid
-from typing import Any
+from typing import Any, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -77,30 +78,59 @@ def create_project(
 
 
 @router.get(
+
     "",
     response_model=PaginatedProjectResponse,
     status_code=status.HTTP_200_OK,
     summary="List projects",
     description="Retrieve a paginated list of projects visible to the authenticated requesting user.",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Paginated list of projects retrieved successfully."
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Missing or invalid access token credentials."
+        },
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+            "description": "Validation error for query parameter format or allowed values."
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "description": "Unexpected server error."
+        },
+    },
 )
 def list_projects(
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)."),
     size: int = Query(default=20, ge=1, le=100, description="Number of items per page."),
-    sort_by: str = Query(default="created_at", description="Attribute to sort by (created_at, updated_at, name)."),
-    order: str = Query(default="desc", description="Sort ordering direction (asc or desc)."),
-    search: str | None = Query(default=None, max_length=100, description="Case-insensitive search on name or description."),
-    visibility: ProjectVisibility | None = Query(default=None, description="Filter results by project visibility."),
+    sort_by: Literal["created_at", "updated_at", "name"] = Query(
+        default="created_at", description="Attribute to sort by."
+    ),
+    order: Literal["asc", "desc"] = Query(
+        default="desc", description="Sort ordering direction."
+    ),
+    search: str | None = Query(
+        default=None, max_length=100, description="Case-insensitive search on name or description."
+    ),
+    visibility: ProjectVisibility | None = Query(
+        default=None, description="Filter results by project visibility."
+    ),
     current_user_id: uuid.UUID = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Any:
     """
-    HTTP endpoint placeholder to retrieve a paginated list of projects.
-    CRUD business logic will be implemented in subsequent steps.
+    HTTP endpoint to retrieve a paginated list of projects visible to the requesting user.
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint logic not implemented yet.",
+    project_service = ProjectService(db)
+    return project_service.list_projects_paginated(
+        owner_id=current_user_id,
+        page=page,
+        size=size,
+        sort_by=sort_by,
+        order=order,
+        search=search,
+        visibility=visibility,
     )
+
 
 
 @router.get(

@@ -1,7 +1,8 @@
 import uuid
-from sqlalchemy import select
+from sqlalchemy import select, or_, func
 from sqlalchemy.orm import Session
 from app.models.project import Project
+from app.models.enums import ProjectVisibility
 
 class ProjectRepository:
     """
@@ -34,6 +35,59 @@ class ProjectRepository:
         """
         statement = select(Project).where(Project.owner_id == owner_id).order_by(Project.created_at.desc())
         return list(self.db.scalars(statement).all())
+
+    def list_projects_paginated(
+        self,
+        owner_id: uuid.UUID,
+        page: int = 1,
+        size: int = 20,
+        sort_by: str = "created_at",
+        order: str = "desc",
+        search: str | None = None,
+        visibility: ProjectVisibility | None = None,
+    ) -> tuple[list[Project], int]:
+        """
+        Lists projects visible to the owner with database-level pagination,
+        sorting, search, and visibility filtering.
+        Returns a tuple of (items, total_count).
+        """
+        access_condition = or_(
+            Project.owner_id == owner_id,
+            Project.visibility == ProjectVisibility.PUBLIC
+        )
+
+        conditions = [access_condition]
+
+        if search and search.strip():
+            term = f"%{search.strip()}%"
+            conditions.append(
+                or_(
+                    Project.name.ilike(term),
+                    Project.description.ilike(term)
+                )
+            )
+
+        if visibility is not None:
+            conditions.append(Project.visibility == visibility)
+
+        count_statement = select(func.count()).select_from(Project).where(*conditions)
+        total = self.db.scalar(count_statement) or 0
+
+        sort_attr = getattr(Project, sort_by, Project.created_at)
+        order_clause = sort_attr.asc() if order == "asc" else sort_attr.desc()
+
+        offset_val = (page - 1) * size
+        items_statement = (
+            select(Project)
+            .where(*conditions)
+            .order_by(order_clause)
+            .offset(offset_val)
+            .limit(size)
+        )
+        items = list(self.db.scalars(items_statement).all())
+
+        return items, total
+
 
     def create(self, project: Project) -> Project:
         """
