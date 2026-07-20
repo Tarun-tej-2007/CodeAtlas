@@ -285,3 +285,99 @@ def test_list_projects_invalid_query_parameters(client, query_str):
 
     response = client.get(f"/api/v1/projects?{query_str}", headers=headers)
     assert response.status_code == 422
+
+
+# --- GET /api/v1/projects/{project_id} Tests ---
+
+def test_get_project_detail_owner_success(client):
+    reg = client.post(
+        "/api/v1/auth/register",
+        json={"username": "detailowner", "email": "detailowner@example.com", "password": "Password123!"}
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['access_token']}"}
+
+    create_res = client.post("/api/v1/projects", headers=headers, json={"name": "Private Project Detail", "visibility": "PRIVATE"})
+    project_id = create_res.json()["id"]
+
+    response = client.get(f"/api/v1/projects/{project_id}", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == project_id
+    assert data["name"] == "Private Project Detail"
+    assert data["visibility"] == "PRIVATE"
+
+def test_get_project_detail_other_user_public_success(client):
+    u_owner = client.post(
+        "/api/v1/auth/register",
+        json={"username": "pubowner", "email": "pubowner@example.com", "password": "Password123!"}
+    ).json()
+    u_other = client.post(
+        "/api/v1/auth/register",
+        json={"username": "pubother", "email": "pubother@example.com", "password": "Password123!"}
+    ).json()
+
+    create_res = client.post(
+        "/api/v1/projects",
+        headers={"Authorization": f"Bearer {u_owner['access_token']}"},
+        json={"name": "Public Shared Project", "visibility": "PUBLIC"}
+    )
+    project_id = create_res.json()["id"]
+
+    response = client.get(
+        f"/api/v1/projects/{project_id}",
+        headers={"Authorization": f"Bearer {u_other['access_token']}"}
+    )
+    assert response.status_code == 200
+    assert response.json()["id"] == project_id
+    assert response.json()["name"] == "Public Shared Project"
+
+def test_get_project_detail_other_user_private_returns_404(client):
+    u_owner = client.post(
+        "/api/v1/auth/register",
+        json={"username": "privowner", "email": "privowner@example.com", "password": "Password123!"}
+    ).json()
+    u_other = client.post(
+        "/api/v1/auth/register",
+        json={"username": "privother", "email": "privother@example.com", "password": "Password123!"}
+    ).json()
+
+    create_res = client.post(
+        "/api/v1/projects",
+        headers={"Authorization": f"Bearer {u_owner['access_token']}"},
+        json={"name": "Secret Private Project", "visibility": "PRIVATE"}
+    )
+    project_id = create_res.json()["id"]
+
+    response = client.get(
+        f"/api/v1/projects/{project_id}",
+        headers={"Authorization": f"Bearer {u_other['access_token']}"}
+    )
+    assert response.status_code == 404
+    assert "not found" in response.json()["detail"].lower()
+
+def test_get_project_detail_nonexistent_uuid(client):
+    reg = client.post(
+        "/api/v1/auth/register",
+        json={"username": "nonexistuser", "email": "nonexist@example.com", "password": "Password123!"}
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['access_token']}"}
+
+    fake_id = str(uuid.uuid4())
+    response = client.get(f"/api/v1/projects/{fake_id}", headers=headers)
+    assert response.status_code == 404
+
+def test_get_project_detail_invalid_uuid(client):
+    reg = client.post(
+        "/api/v1/auth/register",
+        json={"username": "invuuiduser", "email": "invuuid@example.com", "password": "Password123!"}
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['access_token']}"}
+
+    response = client.get("/api/v1/projects/not-a-valid-uuid", headers=headers)
+    assert response.status_code == 422
+
+def test_get_project_detail_unauthenticated(client):
+    fake_id = str(uuid.uuid4())
+    response = client.get(f"/api/v1/projects/{fake_id}")
+    assert response.status_code == 401
+
