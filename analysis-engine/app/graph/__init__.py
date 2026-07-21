@@ -5,7 +5,7 @@ Graph container, BaseGraphBuilder interface, and graph exception classes.
 """
 
 from app.graph.builder import BaseGraphBuilder
-from app.graph.builders import SymbolGraphBuilder
+from app.graph.builders import CallGraphBuilder, SymbolGraphBuilder
 from app.graph.enums import EdgeType, NodeType
 from app.graph.exceptions import GraphBuilderError, GraphError
 from app.graph.graph import Graph
@@ -26,5 +26,7 @@ __all__ = [
     "Graph",
     "BaseGraphBuilder",
     "SymbolGraphBuilder",
+    "CallGraphBuilder",
 ]
+
 
