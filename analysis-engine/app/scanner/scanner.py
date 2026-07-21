@@ -98,7 +98,7 @@ class Scanner:
         source_files_count = 0
         ignored_files_count = 0
 
-        visited_real_dirs: set[Path] = {self.repository_root.resolve()}
+        visited_real_dirs: set[Path] = {self.repository_root}
 
         # Include repository root directory (depth 0)
         directories.append(
@@ -114,60 +114,28 @@ class Scanner:
             for current_root, dir_names, file_names in self.repository_root.walk(
                 follow_symlinks=self.config.follow_symlinks
             ):
-                # Filter out ignored directories in-place to prevent walking into skipped trees
-                valid_dir_names: list[str] = []
-                for d in dir_names:
-                    dir_path = current_root / d
-                    if self.filters.should_skip_directory(dir_path):
-                        continue
-
-                    # Prevent infinite symlink loops when follow_symlinks is True
-                    if self.config.follow_symlinks:
-                        try:
-                            real_dir_path = dir_path.resolve()
-                            if real_dir_path in visited_real_dirs:
-                                continue
-                            visited_real_dirs.add(real_dir_path)
-                        except OSError:
-                            continue
-
-                    valid_dir_names.append(d)
-
-                dir_names[:] = valid_dir_names
-
-                # Process valid child directories
-                for dir_name in sorted(dir_names):
-                    dir_path = current_root / dir_name
-                    rel_dir_path = dir_path.relative_to(self.repository_root)
-                    depth = len(rel_dir_path.parts)
-                    directories.append(
-                        DirectoryMetadata(
-                            path=dir_path,
-                            relative_path=rel_dir_path,
-                            depth=depth,
-                        )
-                    )
+                # Filter out ignored directories in-place and collect valid child directory metadata
+                self._process_subdirectories(
+                    current_root=current_root,
+                    dir_names=dir_names,
+                    directories=directories,
+                    visited_real_dirs=visited_real_dirs,
+                )
 
                 # Process child files
-                for file_name in sorted(file_names):
-                    if self.config.collect_statistics:
-                        total_files_count += 1
+                (
+                    t_count,
+                    s_count,
+                    i_count,
+                ) = self._process_files(
+                    current_root=current_root,
+                    file_names=file_names,
+                    files=files,
+                )
 
-                    file_path = current_root / file_name
-
-                    if self.filters.should_skip_file(file_path):
-                        if self.config.collect_statistics:
-                            ignored_files_count += 1
-                    elif self.filters.is_supported_source_file(file_path):
-                        if self.config.collect_statistics:
-                            source_files_count += 1
-                        file_metadata = self.extractor.extract(
-                            file_path, self.repository_root
-                        )
-                        files.append(file_metadata)
-                    else:
-                        if self.config.collect_statistics:
-                            ignored_files_count += 1
+                total_files_count += t_count
+                source_files_count += s_count
+                ignored_files_count += i_count
 
         except PermissionError as err:
             raise FileAccessError(
@@ -202,3 +170,78 @@ class Scanner:
             directories=directories,
             statistics=statistics,
         )
+
+    def _process_subdirectories(
+        self,
+        current_root: Path,
+        dir_names: list[str],
+        directories: list[DirectoryMetadata],
+        visited_real_dirs: set[Path],
+    ) -> None:
+        """Filters child directory names in-place and appends valid DirectoryMetadata."""
+        valid_dir_names: list[str] = []
+        for d in dir_names:
+            dir_path = current_root / d
+            if self.filters.should_skip_directory(dir_path):
+                continue
+
+            # Prevent infinite symlink loops when follow_symlinks is True
+            if self.config.follow_symlinks:
+                try:
+                    real_dir_path = dir_path.resolve()
+                    if real_dir_path in visited_real_dirs:
+                        continue
+                    visited_real_dirs.add(real_dir_path)
+                except (OSError, RuntimeError):
+                    continue
+
+            valid_dir_names.append(d)
+
+        # Mutate dir_names in-place to prevent Path.walk() from traversing skipped trees
+        dir_names[:] = valid_dir_names
+
+        for dir_name in sorted(dir_names):
+            dir_path = current_root / dir_name
+            rel_dir_path = dir_path.relative_to(self.repository_root)
+            depth = len(rel_dir_path.parts)
+            directories.append(
+                DirectoryMetadata(
+                    path=dir_path,
+                    relative_path=rel_dir_path,
+                    depth=depth,
+                )
+            )
+
+    def _process_files(
+        self,
+        current_root: Path,
+        file_names: list[str],
+        files: list[FileMetadata],
+    ) -> tuple[int, int, int]:
+        """Filters files, extracts metadata for supported source files, and returns count metrics."""
+        total_count = 0
+        source_count = 0
+        ignored_count = 0
+
+        for file_name in file_names:
+            if self.config.collect_statistics:
+                total_count += 1
+
+            file_path = current_root / file_name
+            extension = file_path.suffix.lower()
+
+            if self.filters.should_skip_file(file_path, extension=extension):
+                if self.config.collect_statistics:
+                    ignored_count += 1
+            elif self.filters.is_supported_source_file(file_path, extension=extension):
+                if self.config.collect_statistics:
+                    source_count += 1
+                file_metadata = self.extractor.extract(
+                    file_path, self.repository_root, extension=extension
+                )
+                files.append(file_metadata)
+            else:
+                if self.config.collect_statistics:
+                    ignored_count += 1
+
+        return total_count, source_count, ignored_count

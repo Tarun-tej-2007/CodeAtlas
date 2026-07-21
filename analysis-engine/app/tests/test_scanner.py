@@ -439,8 +439,128 @@ class TestScannerPipelineAndConfig(unittest.TestCase):
             self.assertEqual(len(result.files), 1)
 
 
+class TestScannerRobustnessAndOptimization(unittest.TestCase):
+    """Robustness, performance, and edge-case tests for Scanner component."""
+
+    def test_unicode_filenames_and_paths(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            unicode_dir = root / "代码" / "ñandú"
+            unicode_dir.mkdir(parents=True)
+
+            (unicode_dir / "文件.ts").write_text("// unicode file", encoding="utf-8")
+            (unicode_dir / "⚡spark.js").write_text("// spark", encoding="utf-8")
+
+            scanner = Scanner(root)
+            result = scanner.scan()
+
+            file_names = [f.filename for f in result.files]
+            self.assertIn("文件.ts", file_names)
+            self.assertIn("⚡spark.js", file_names)
+
+    def test_deeply_nested_directory_tree(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            deep_path = root
+            for level in ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]:
+                deep_path = deep_path / level
+
+            deep_path.mkdir(parents=True)
+            (deep_path / "deep.tsx").write_text("export const Deep = () => null;")
+
+            scanner = Scanner(root)
+            result = scanner.scan()
+
+            self.assertEqual(len(result.files), 1)
+            self.assertEqual(result.files[0].filename, "deep.tsx")
+            self.assertEqual(result.files[0].relative_path, Path("a/b/c/d/e/f/g/h/i/j/deep.tsx"))
+            self.assertEqual(len(result.directories), 11)
+
+    def test_repository_with_only_ignored_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            (root / ".DS_Store").write_bytes(b"")
+            (root / "Thumbs.db").write_bytes(b"")
+            (root / ".env").write_text("SECRET=123")
+
+            scanner = Scanner(root)
+            result = scanner.scan()
+
+            self.assertEqual(len(result.files), 0)
+            self.assertEqual(result.statistics.source_files, 0)
+            self.assertEqual(result.statistics.ignored_files, 3)
+
+    def test_repository_with_zero_source_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            (root / "readme.md").write_text("# Readme")
+            (root / "data.json").write_text("{}")
+            (root / "script.py").write_text("print(1)")
+
+            scanner = Scanner(root)
+            result = scanner.scan()
+
+            self.assertEqual(len(result.files), 0)
+            self.assertEqual(result.statistics.source_files, 0)
+            self.assertEqual(result.statistics.ignored_files, 3)
+            self.assertEqual(result.statistics.directories, 1)
+
+    def test_symlink_loop_protection(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            dir_a = root / "dir_a"
+            dir_b = root / "dir_b"
+            dir_a.mkdir()
+            dir_b.mkdir()
+
+            try:
+                (dir_a / "link_b").symlink_to(dir_b, target_is_directory=True)
+                (dir_b / "link_a").symlink_to(dir_a, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                return
+
+            scanner = Scanner(root, config=ScannerConfig(follow_symlinks=True))
+            result = scanner.scan()
+            self.assertIsNotNone(result)
+
+    def test_configuration_combination(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            hidden_git = root / ".git"
+            hidden_git.mkdir()
+            (hidden_git / "git_source.ts").write_text("// hidden git source")
+
+            config = ScannerConfig(
+                include_hidden=True,
+                respect_default_filters=False,
+                follow_symlinks=False,
+                collect_statistics=True,
+            )
+            scanner = Scanner(root, config=config)
+            result = scanner.scan()
+
+            file_names = [f.filename for f in result.files]
+            self.assertIn("git_source.ts", file_names)
+
+    def test_performance_sanity_check(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            src_dir = root / "src"
+            src_dir.mkdir()
+
+            for i in range(50):
+                (src_dir / f"file_{i}.ts").write_text(f"// file {i}")
+
+            scanner = Scanner(root)
+            result = scanner.scan()
+
+            self.assertEqual(result.statistics.source_files, 50)
+            self.assertLess(result.statistics.scan_duration_ms, 500.0)
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
 
