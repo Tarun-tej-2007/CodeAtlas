@@ -10,6 +10,7 @@ from app.graph.enums import EdgeType, NodeType
 from app.graph.exceptions import GraphBuilderError, GraphError
 from app.graph.graph import Graph
 from app.graph.models import GraphEdge, GraphMetadata, GraphNode
+from app.graph.query import GraphQueryEngine, GraphQueryError
 
 __all__ = [
     # Enums
@@ -22,11 +23,14 @@ __all__ = [
     # Exceptions
     "GraphError",
     "GraphBuilderError",
-    # Graph Container & Builders
+    "GraphQueryError",
+    # Graph Container, Builders & Query Engine
     "Graph",
     "BaseGraphBuilder",
     "SymbolGraphBuilder",
     "CallGraphBuilder",
+    "GraphQueryEngine",
 ]
+
 
 
