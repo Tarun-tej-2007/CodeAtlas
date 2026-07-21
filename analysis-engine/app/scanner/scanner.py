@@ -4,16 +4,17 @@ Provides the Scanner class for recursive repository directory traversal,
 supported source file discovery, and scan statistics aggregation.
 """
 
-from datetime import datetime, timezone
 from pathlib import Path
 import time
 
-from app.scanner.constants import EXTENSION_LANGUAGE_MAP, SUPPORTED_EXTENSIONS
+
+from app.scanner.constants import SUPPORTED_EXTENSIONS
 from app.scanner.exceptions import (
     FileAccessError,
     InvalidRepositoryError,
     RepositoryNotFoundError,
 )
+from app.scanner.metadata import FileMetadataExtractor
 from app.scanner.models import (
     DirectoryMetadata,
     FileMetadata,
@@ -25,11 +26,16 @@ from app.scanner.models import (
 class Scanner:
     """Recursively scans a repository root directory for source files and structure."""
 
-    def __init__(self, repository_root: Path | str) -> None:
+    def __init__(
+        self,
+        repository_root: Path | str,
+        extractor: FileMetadataExtractor | None = None,
+    ) -> None:
         """Initializes and validates the repository scanner.
 
         Args:
             repository_root: Absolute or relative path to the target repository root.
+            extractor: Optional metadata extractor instance (defaults to FileMetadataExtractor()).
 
         Raises:
             RepositoryNotFoundError: If the repository root path does not exist.
@@ -62,6 +68,8 @@ class Scanner:
             raise InvalidRepositoryError(
                 f"Inaccessible repository root '{self.repository_root}': {err}"
             ) from err
+
+        self.extractor = extractor or FileMetadataExtractor()
 
     def scan(self) -> ScanResult:
         """Recursively scans the repository for directories and supported source files.
@@ -115,22 +123,13 @@ class Scanner:
 
                     if extension in SUPPORTED_EXTENSIONS:
                         source_files_count += 1
-                        rel_file_path = file_path.relative_to(self.repository_root)
-                        language = EXTENSION_LANGUAGE_MAP.get(extension)
-
-                        # Placeholders for size_bytes and modified_at (Populated in Step 3)
-                        file_metadata = FileMetadata(
-                            path=file_path,
-                            relative_path=rel_file_path,
-                            filename=file_name,
-                            extension=extension,
-                            size_bytes=0,  # Placeholder: Populated during Step 3 metadata extraction
-                            modified_at=datetime.fromtimestamp(0, tz=timezone.utc),  # Placeholder: Populated during Step 3
-                            language=language,
+                        file_metadata = self.extractor.extract(
+                            file_path, self.repository_root
                         )
                         files.append(file_metadata)
                     else:
                         ignored_files_count += 1
+
 
         except PermissionError as err:
             raise FileAccessError(
