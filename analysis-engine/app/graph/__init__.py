@@ -11,6 +11,7 @@ from app.graph.exceptions import GraphBuilderError, GraphError
 from app.graph.graph import Graph
 from app.graph.models import GraphEdge, GraphMetadata, GraphNode
 from app.graph.query import GraphQueryEngine, GraphQueryError
+from app.graph.serialization import GraphSerializationError, GraphSerializer
 
 __all__ = [
     # Enums
@@ -24,13 +25,16 @@ __all__ = [
     "GraphError",
     "GraphBuilderError",
     "GraphQueryError",
-    # Graph Container, Builders & Query Engine
+    "GraphSerializationError",
+    # Graph Container, Builders, Query Engine & Serializer
     "Graph",
     "BaseGraphBuilder",
     "SymbolGraphBuilder",
     "CallGraphBuilder",
     "GraphQueryEngine",
+    "GraphSerializer",
 ]
+
 
 
 
