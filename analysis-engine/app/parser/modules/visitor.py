@@ -164,18 +164,20 @@ class ModuleVisitor(ASTVisitor):
 
         # Export * (e.g. export * from './components';)
         if is_export_all:
+            target_module = next((self._clean_string_literal(child.text) for child in node.children if child.type in ("string", "string_fragment")), None)
             symbol_id = self._generate_export_id("*", ExportKind.ALL, node.start_line)
             self.exports.append(
                 ExportSymbol(
                     id=symbol_id,
                     name="*",
-                    alias=None,
+                    alias=target_module,
                     kind=ExportKind.ALL,
                     path=self.document_path,
                     start_line=node.start_line,
                 )
             )
             return
+
 
         # Export Default (e.g. export default App;)
         if is_default:
