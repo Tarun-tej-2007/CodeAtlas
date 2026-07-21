@@ -23,11 +23,14 @@ from app.scanner.models import (
     ScanStatistics,
 )
 
+from app.scanner.metadata import FileMetadataExtractor
 from app.scanner.scanner import Scanner
 
 __all__ = [
-    # Scanner Engine
+    # Scanner Engine & Extractor
     "Scanner",
+    "FileMetadataExtractor",
+
     # Models
     "FileMetadata",
     "DirectoryMetadata",

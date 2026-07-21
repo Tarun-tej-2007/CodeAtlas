@@ -209,7 +209,62 @@ class TestRepositoryScanner(unittest.TestCase):
             self.assertGreaterEqual(r2.statistics.scan_duration_ms, 0.0)
 
 
+from unittest.mock import MagicMock
+from app.scanner.metadata import FileMetadataExtractor
+
+class TestFileMetadataExtractor(unittest.TestCase):
+    """Tests for FileMetadataExtractor component."""
+
+    def test_extract_file_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            src_dir = root / "src"
+            src_dir.mkdir()
+            file_path = src_dir / "app.tsx"
+            content = "export const App = () => <div>Hello</div>;"
+            file_path.write_text(content)
+
+            extractor = FileMetadataExtractor()
+            metadata = extractor.extract(file_path, root)
+
+            self.assertEqual(metadata.path, file_path)
+            self.assertEqual(metadata.relative_path, Path("src/app.tsx"))
+            self.assertEqual(metadata.filename, "app.tsx")
+            self.assertEqual(metadata.extension, ".tsx")
+            self.assertEqual(metadata.size_bytes, len(content.encode("utf-8")))
+            self.assertEqual(metadata.language, "TypeScript")
+            self.assertIsNotNone(metadata.modified_at.tzinfo)
+            self.assertEqual(metadata.modified_at.tzinfo, timezone.utc)
+
+    def test_extract_inaccessible_file_raises_file_access_error(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            file_path = root / "missing.ts"
+
+            extractor = FileMetadataExtractor()
+            with self.assertRaises(FileAccessError):
+                extractor.extract(file_path, root)
+
+    def test_extract_permission_error_raises_file_access_error(self):
+        root = Path("/fake/repo")
+        mock_path = MagicMock(spec=Path)
+        mock_path.stat.side_effect = PermissionError("Permission denied")
+
+        extractor = FileMetadataExtractor()
+        with self.assertRaises(FileAccessError):
+            extractor.extract(mock_path, root)
+
+    def test_extract_file_outside_repository_root(self):
+        with tempfile.TemporaryDirectory() as tmp_dir1, tempfile.TemporaryDirectory() as tmp_dir2:
+            root = Path(tmp_dir1).resolve()
+            outside_file = Path(tmp_dir2).resolve() / "outside.ts"
+            outside_file.write_text("// outside")
+
+            extractor = FileMetadataExtractor()
+            with self.assertRaises(FileAccessError):
+                extractor.extract(outside_file, root)
 
 
 if __name__ == "__main__":
     unittest.main()
+
