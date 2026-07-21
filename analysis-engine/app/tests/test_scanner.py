@@ -265,6 +265,88 @@ class TestFileMetadataExtractor(unittest.TestCase):
                 extractor.extract(outside_file, root)
 
 
+from app.scanner.filters import FilteringEngine
+
+class TestFilteringEngine(unittest.TestCase):
+    """Tests for FilteringEngine component."""
+
+    def setUp(self):
+        self.filters = FilteringEngine()
+
+    def test_should_skip_ignored_directories(self):
+        ignored_dirs = [
+            ".git", ".github", "node_modules", ".next", "dist",
+            "build", "coverage", "venv", ".venv", "__pycache__",
+            ".idea", ".vscode"
+        ]
+        for dir_name in ignored_dirs:
+            self.assertTrue(
+                self.filters.should_skip_directory(Path(f"/repo/{dir_name}")),
+                f"Directory {dir_name} should be skipped"
+            )
+
+    def test_should_not_skip_valid_directory(self):
+        self.assertFalse(self.filters.should_skip_directory(Path("/repo/src")))
+        self.assertFalse(self.filters.should_skip_directory(Path("/repo/components")))
+
+    def test_should_skip_hidden_directory(self):
+        self.assertTrue(self.filters.should_skip_directory(Path("/repo/.cache")))
+
+    def test_should_skip_ignored_files(self):
+        self.assertTrue(self.filters.should_skip_file(Path("/repo/.DS_Store")))
+        self.assertTrue(self.filters.should_skip_file(Path("/repo/Thumbs.db")))
+
+    def test_should_skip_hidden_files_except_supported_extensions(self):
+        self.assertTrue(self.filters.should_skip_file(Path("/repo/.env")))
+        self.assertTrue(self.filters.should_skip_file(Path("/repo/.eslintrc.json")))
+        self.assertFalse(self.filters.should_skip_file(Path("/repo/.index.ts")))
+
+    def test_is_supported_source_file(self):
+        self.assertTrue(self.filters.is_supported_source_file(Path("main.js")))
+        self.assertTrue(self.filters.is_supported_source_file(Path("App.jsx")))
+        self.assertTrue(self.filters.is_supported_source_file(Path("index.ts")))
+        self.assertTrue(self.filters.is_supported_source_file(Path("Button.tsx")))
+        self.assertFalse(self.filters.is_supported_source_file(Path("styles.css")))
+        self.assertFalse(self.filters.is_supported_source_file(Path("script.py")))
+
+    def test_scanner_pruning_ignored_and_nested_directories(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+
+            src = root / "src"
+            src.mkdir()
+            (src / "app.ts").write_text("// app")
+
+            nm = root / "node_modules"
+            nm.mkdir()
+            (nm / "dep.ts").write_text("// dependency")
+
+            git_dir = root / ".git"
+            git_dir.mkdir()
+            (git_dir / "config.ts").write_text("// git config")
+
+            nested_nm = src / "node_modules"
+            nested_nm.mkdir()
+            (nested_nm / "inner.ts").write_text("// inner")
+
+            (root / ".DS_Store").write_bytes(b"")
+
+            scanner = Scanner(root)
+            result = scanner.scan()
+
+            rel_dir_names = [str(d.relative_path) for d in result.directories]
+            self.assertIn(".", rel_dir_names)
+            self.assertIn("src", rel_dir_names)
+            self.assertNotIn("node_modules", rel_dir_names)
+            self.assertNotIn(".git", rel_dir_names)
+            self.assertNotIn(str(Path("src/node_modules")), rel_dir_names)
+
+
+            file_names = [f.filename for f in result.files]
+            self.assertEqual(file_names, ["app.ts"])
+
+
 if __name__ == "__main__":
     unittest.main()
+
 

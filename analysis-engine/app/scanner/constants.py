@@ -22,16 +22,21 @@ EXTENSION_LANGUAGE_MAP: Final[dict[str, str]] = {
 
 IGNORED_DIRECTORIES: Final[set[str]] = {
     ".git",
+    ".github",
     "node_modules",
+    ".next",
     "dist",
     "build",
     "coverage",
-    ".next",
+    "venv",
+    ".venv",
+    "__pycache__",
     ".idea",
     ".vscode",
-    "__pycache__",
 }
 
 IGNORED_FILES: Final[set[str]] = {
     ".DS_Store",
+    "Thumbs.db",
 }
+
