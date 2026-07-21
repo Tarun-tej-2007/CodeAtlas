@@ -346,7 +346,101 @@ class TestFilteringEngine(unittest.TestCase):
             self.assertEqual(file_names, ["app.ts"])
 
 
+from app.scanner.config import ScannerConfig
+
+class TestScannerPipelineAndConfig(unittest.TestCase):
+    """Tests for ScannerConfig, pipeline orchestration, and dependency injection."""
+
+    def test_scanner_config_defaults_and_immutability(self):
+        config = ScannerConfig()
+        self.assertFalse(config.follow_symlinks)
+        self.assertFalse(config.include_hidden)
+        self.assertTrue(config.respect_default_filters)
+        self.assertTrue(config.collect_statistics)
+
+        from pydantic import ValidationError
+        with self.assertRaises(ValidationError):
+            config.follow_symlinks = True
+
+    def test_scanner_dependency_injection(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            (root / "index.ts").write_text("// index")
+
+            config = ScannerConfig()
+            filters = FilteringEngine(config=config)
+            extractor = FileMetadataExtractor()
+
+            scanner = Scanner(
+                repository_root=root,
+                config=config,
+                filters=filters,
+                metadata_extractor=extractor,
+            )
+
+            self.assertEqual(scanner.config, config)
+            self.assertEqual(scanner.filters, filters)
+            self.assertEqual(scanner.extractor, extractor)
+
+            result = scanner.scan()
+            self.assertEqual(len(result.files), 1)
+
+    def test_include_hidden_configuration(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+
+            hidden_dir = root / ".hidden_dir"
+            hidden_dir.mkdir()
+            (hidden_dir / "hidden.ts").write_text("// hidden file")
+            (root / "regular.ts").write_text("// regular file")
+
+            config = ScannerConfig(include_hidden=True, respect_default_filters=False)
+            scanner = Scanner(root, config=config)
+            result = scanner.scan()
+
+            file_names = [f.filename for f in result.files]
+            self.assertIn("hidden.ts", file_names)
+            self.assertIn("regular.ts", file_names)
+
+    def test_symlink_policy(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            real_file = root / "real.ts"
+            real_file.write_text("// real")
+
+            symlink_file = root / "link.ts"
+            try:
+                symlink_file.symlink_to(real_file)
+            except (OSError, NotImplementedError):
+                return
+
+            scanner_no_sym = Scanner(root, config=ScannerConfig(follow_symlinks=False))
+            res_no_sym = scanner_no_sym.scan()
+            files_no_sym = [f.filename for f in res_no_sym.files]
+            self.assertIn("real.ts", files_no_sym)
+            self.assertNotIn("link.ts", files_no_sym)
+
+            scanner_sym = Scanner(root, config=ScannerConfig(follow_symlinks=True))
+            res_sym = scanner_sym.scan()
+            files_sym = [f.filename for f in res_sym.files]
+            self.assertIn("real.ts", files_sym)
+            self.assertIn("link.ts", files_sym)
+
+    def test_collect_statistics_disabled(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir).resolve()
+            (root / "app.ts").write_text("// app")
+
+            config = ScannerConfig(collect_statistics=False)
+            scanner = Scanner(root, config=config)
+            result = scanner.scan()
+
+            self.assertEqual(result.statistics.scan_duration_ms, 0.0)
+            self.assertEqual(len(result.files), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
 

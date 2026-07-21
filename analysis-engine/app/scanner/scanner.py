@@ -1,12 +1,13 @@
 """Codebase repository scanner module.
 
-Provides the Scanner class for recursive repository directory traversal,
-supported source file discovery, and scan statistics aggregation.
+Provides the Scanner class for pipeline orchestration of repository traversal,
+filtering, metadata extraction, and result composition.
 """
 
 from pathlib import Path
 import time
 
+from app.scanner.config import ScannerConfig
 from app.scanner.exceptions import (
     FileAccessError,
     InvalidRepositoryError,
@@ -23,20 +24,24 @@ from app.scanner.models import (
 
 
 class Scanner:
-    """Recursively scans a repository root directory for source files and structure."""
+    """Orchestrates repository scanning pipeline components."""
 
     def __init__(
         self,
         repository_root: Path | str,
-        extractor: FileMetadataExtractor | None = None,
+        config: ScannerConfig | None = None,
         filters: FilteringEngine | None = None,
+        metadata_extractor: FileMetadataExtractor | None = None,
+        extractor: FileMetadataExtractor | None = None,
     ) -> None:
         """Initializes and validates the repository scanner.
 
         Args:
             repository_root: Absolute or relative path to the target repository root.
-            extractor: Optional metadata extractor instance (defaults to FileMetadataExtractor()).
-            filters: Optional filtering engine instance (defaults to FilteringEngine()).
+            config: Optional ScannerConfig instance controlling scanning policies.
+            filters: Optional FilteringEngine instance.
+            metadata_extractor: Optional FileMetadataExtractor instance.
+            extractor: Backward-compatible alias for metadata_extractor.
 
         Raises:
             RepositoryNotFoundError: If the repository root path does not exist.
@@ -70,11 +75,12 @@ class Scanner:
                 f"Inaccessible repository root '{self.repository_root}': {err}"
             ) from err
 
-        self.extractor = extractor or FileMetadataExtractor()
-        self.filters = filters or FilteringEngine()
+        self.config = config or ScannerConfig()
+        self.filters = filters or FilteringEngine(config=self.config)
+        self.extractor = metadata_extractor or extractor or FileMetadataExtractor()
 
     def scan(self) -> ScanResult:
-        """Recursively scans the repository for directories and supported source files.
+        """Recursively scans the repository using injected pipeline components.
 
         Returns:
             ScanResult containing discovered file metadata, directory structure,
@@ -83,7 +89,7 @@ class Scanner:
         Raises:
             FileAccessError: If filesystem traversal encounters unrecoverable I/O errors.
         """
-        start_time = time.monotonic()
+        start_time = time.monotonic() if self.config.collect_statistics else 0.0
 
         directories: list[DirectoryMetadata] = []
         files: list[FileMetadata] = []
@@ -91,6 +97,8 @@ class Scanner:
         total_files_count = 0
         source_files_count = 0
         ignored_files_count = 0
+
+        visited_real_dirs: set[Path] = {self.repository_root.resolve()}
 
         # Include repository root directory (depth 0)
         directories.append(
@@ -103,13 +111,29 @@ class Scanner:
 
         try:
             # Walk directory tree using Python 3.12 pathlib Path.walk()
-            for current_root, dir_names, file_names in self.repository_root.walk():
+            for current_root, dir_names, file_names in self.repository_root.walk(
+                follow_symlinks=self.config.follow_symlinks
+            ):
                 # Filter out ignored directories in-place to prevent walking into skipped trees
-                dir_names[:] = [
-                    d
-                    for d in dir_names
-                    if not self.filters.should_skip_directory(current_root / d)
-                ]
+                valid_dir_names: list[str] = []
+                for d in dir_names:
+                    dir_path = current_root / d
+                    if self.filters.should_skip_directory(dir_path):
+                        continue
+
+                    # Prevent infinite symlink loops when follow_symlinks is True
+                    if self.config.follow_symlinks:
+                        try:
+                            real_dir_path = dir_path.resolve()
+                            if real_dir_path in visited_real_dirs:
+                                continue
+                            visited_real_dirs.add(real_dir_path)
+                        except OSError:
+                            continue
+
+                    valid_dir_names.append(d)
+
+                dir_names[:] = valid_dir_names
 
                 # Process valid child directories
                 for dir_name in sorted(dir_names):
@@ -126,19 +150,24 @@ class Scanner:
 
                 # Process child files
                 for file_name in sorted(file_names):
-                    total_files_count += 1
+                    if self.config.collect_statistics:
+                        total_files_count += 1
+
                     file_path = current_root / file_name
 
                     if self.filters.should_skip_file(file_path):
-                        ignored_files_count += 1
+                        if self.config.collect_statistics:
+                            ignored_files_count += 1
                     elif self.filters.is_supported_source_file(file_path):
-                        source_files_count += 1
+                        if self.config.collect_statistics:
+                            source_files_count += 1
                         file_metadata = self.extractor.extract(
                             file_path, self.repository_root
                         )
                         files.append(file_metadata)
                     else:
-                        ignored_files_count += 1
+                        if self.config.collect_statistics:
+                            ignored_files_count += 1
 
         except PermissionError as err:
             raise FileAccessError(
@@ -153,7 +182,11 @@ class Scanner:
         directories.sort(key=lambda d: d.path)
         files.sort(key=lambda f: f.path)
 
-        scan_duration_ms = round((time.monotonic() - start_time) * 1000, 2)
+        scan_duration_ms = (
+            round((time.monotonic() - start_time) * 1000, 2)
+            if self.config.collect_statistics
+            else 0.0
+        )
 
         statistics = ScanStatistics(
             total_files=total_files_count,
