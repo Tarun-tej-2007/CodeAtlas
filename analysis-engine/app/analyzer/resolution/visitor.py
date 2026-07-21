@@ -32,6 +32,7 @@ class ResolutionVisitor(ASTVisitor):
         self.current_scope = root_scope or Scope(kind="global")
         self.references: list[ResolvedReference] = []
         self._ref_counter = 0
+        self._declaration_node_ids: set[str] = set()
 
         # Pre-index symbols by (name, line) and name
         self._symbols_by_name_line: dict[tuple[str, int], Symbol] = {
@@ -83,9 +84,15 @@ class ResolutionVisitor(ASTVisitor):
             self._visit_block(node)
             return
 
+        # Declaration: Import Statement
+        if node_type == "import_statement":
+            self._handle_import_statement(node)
+            return
+
         # Declaration: Variable Declarator
         if node_type == "variable_declarator":
             self._handle_variable_declarator(node)
+
 
         # Declaration: Interface / Type Alias / Enum
         elif node_type in ("interface_declaration", "type_alias_declaration", "enum_declaration"):
@@ -102,9 +109,10 @@ class ResolutionVisitor(ASTVisitor):
 
     def _visit_function(self, node: ASTNode) -> None:
         """Enters a new function scope frame and registers parameters and local declarations."""
-        fn_name = self._get_identifier_text(node)
-        if fn_name:
-            symbol = self._find_matching_symbol(fn_name, node.start_line)
+        fn_child = self._find_identifier_child(node)
+        if fn_child:
+            self._declaration_node_ids.add(fn_child.id)
+            symbol = self._find_matching_symbol(fn_child.text, node.start_line)
             if symbol:
                 self.current_scope.declare(symbol)
 
@@ -123,9 +131,10 @@ class ResolutionVisitor(ASTVisitor):
 
     def _visit_class(self, node: ASTNode) -> None:
         """Enters a new class scope frame."""
-        class_name = self._get_identifier_text(node)
-        if class_name:
-            symbol = self._find_matching_symbol(class_name, node.start_line)
+        class_child = self._find_identifier_child(node)
+        if class_child:
+            self._declaration_node_ids.add(class_child.id)
+            symbol = self._find_matching_symbol(class_child.text, node.start_line)
             if symbol:
                 self.current_scope.declare(symbol)
 
@@ -147,13 +156,25 @@ class ResolutionVisitor(ASTVisitor):
 
         self.current_scope = prev_scope
 
+    def _handle_import_statement(self, node: ASTNode) -> None:
+        """Marks import declaration identifiers so they are not treated as usage references."""
+        self._mark_declaration_identifiers_recursive(node)
+
+    def _mark_declaration_identifiers_recursive(self, node: ASTNode) -> None:
+        if node.type in ("identifier", "type_identifier"):
+            self._declaration_node_ids.add(node.id)
+        for child in node.children:
+            self._mark_declaration_identifiers_recursive(child)
+
     def _handle_variable_declarator(self, node: ASTNode) -> None:
+
         """Registers local variable declaration in current scope."""
-        var_name = self._get_identifier_text(node)
-        if var_name:
+        var_child = self._find_identifier_child(node)
+        if var_child:
+            self._declaration_node_ids.add(var_child.id)
+            var_name = var_child.text
             symbol = self._find_matching_symbol(var_name, node.start_line)
             if not symbol:
-                # Synthesize local symbol if not pre-indexed
                 from app.parser.symbols import Symbol, SymbolKind
                 symbol = Symbol(
                     id=f"sym_local_{node.start_line}_{var_name}",
@@ -168,9 +189,10 @@ class ResolutionVisitor(ASTVisitor):
 
     def _handle_type_declaration(self, node: ASTNode) -> None:
         """Registers type/interface/enum declaration in current scope."""
-        type_name = self._get_identifier_text(node)
-        if type_name:
-            symbol = self._find_matching_symbol(type_name, node.start_line)
+        type_child = self._find_identifier_child(node)
+        if type_child:
+            self._declaration_node_ids.add(type_child.id)
+            symbol = self._find_matching_symbol(type_child.text, node.start_line)
             if symbol:
                 self.current_scope.declare(symbol)
 
@@ -178,8 +200,10 @@ class ResolutionVisitor(ASTVisitor):
         """Registers formal parameter declarations in function scope."""
         from app.parser.symbols import Symbol, SymbolKind
         for child in node.children:
-            param_name = self._get_identifier_text(child) or (child.text if child.type == "identifier" else None)
-            if param_name:
+            param_child = self._find_identifier_child(child) or (child if child.type in ("identifier", "type_identifier") else None)
+            if param_child:
+                self._declaration_node_ids.add(param_child.id)
+                param_name = param_child.text
                 param_symbol = Symbol(
                     id=f"sym_param_{child.start_line}_{param_name}",
                     name=param_name,
@@ -223,16 +247,15 @@ class ResolutionVisitor(ASTVisitor):
 
         self.references.append(ref)
 
-    def _get_identifier_text(self, node: ASTNode) -> str | None:
+    def _find_identifier_child(self, node: ASTNode) -> ASTNode | None:
         for child in node.children:
             if child.type in ("identifier", "property_identifier", "type_identifier"):
-                return child.text
+                return child
         return None
 
     def _is_declaration_identifier(self, node: ASTNode) -> bool:
         """Checks if an identifier node is a declaration name rather than a usage."""
-        # Simple check based on position or type
-        return False
+        return node.id in self._declaration_node_ids
 
     def _is_property_access_target(self, node: ASTNode) -> bool:
         """Checks if an identifier node is a property access target (e.g. obj.prop)."""

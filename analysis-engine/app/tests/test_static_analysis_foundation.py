@@ -128,9 +128,10 @@ class TestStaticAnalysisFoundation(unittest.TestCase):
         registry = AnalyzerRegistry()
         registry.register(FailingAnalyzer())
 
-        pipeline = AnalysisPipeline(registry=registry)
+        pipeline = AnalysisPipeline(registry=registry, raise_on_error=True)
 
         with self.assertRaises(AnalyzerExecutionError):
+
             pipeline.execute(context)
 
         self.assertTrue(issubclass(AnalyzerExecutionError, AnalysisError))
