@@ -12,7 +12,12 @@ from app.parser.exceptions import (
 )
 from app.parser.language import Language
 from app.parser.models import ParsedFile, ParseResult
-from app.parser.parser import BaseParser, TreeSitterParser, create_treesitter_parser
+from app.parser.parser import (
+    BaseParser,
+    TreeSitterParser,
+    create_treesitter_parser,
+    get_treesitter_language,
+)
 from app.parser.registry import ParserRegistry
 from app.parser.repository_parser import RepositoryParser
 
@@ -27,12 +32,14 @@ __all__ = [
     "UnsupportedLanguageError",
     "ParserInitializationError",
     "ParseFailureError",
-    # Parser Base Interface, Implementations & Helper
+    # Parser Base Interface, Implementations & Helpers
     "BaseParser",
     "TreeSitterParser",
     "create_treesitter_parser",
+    "get_treesitter_language",
     # Registry & Repository Parser
     "ParserRegistry",
     "RepositoryParser",
 ]
+
 
