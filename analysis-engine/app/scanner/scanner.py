@@ -7,13 +7,12 @@ supported source file discovery, and scan statistics aggregation.
 from pathlib import Path
 import time
 
-
-from app.scanner.constants import SUPPORTED_EXTENSIONS
 from app.scanner.exceptions import (
     FileAccessError,
     InvalidRepositoryError,
     RepositoryNotFoundError,
 )
+from app.scanner.filters import FilteringEngine
 from app.scanner.metadata import FileMetadataExtractor
 from app.scanner.models import (
     DirectoryMetadata,
@@ -30,12 +29,14 @@ class Scanner:
         self,
         repository_root: Path | str,
         extractor: FileMetadataExtractor | None = None,
+        filters: FilteringEngine | None = None,
     ) -> None:
         """Initializes and validates the repository scanner.
 
         Args:
             repository_root: Absolute or relative path to the target repository root.
             extractor: Optional metadata extractor instance (defaults to FileMetadataExtractor()).
+            filters: Optional filtering engine instance (defaults to FilteringEngine()).
 
         Raises:
             RepositoryNotFoundError: If the repository root path does not exist.
@@ -70,6 +71,7 @@ class Scanner:
             ) from err
 
         self.extractor = extractor or FileMetadataExtractor()
+        self.filters = filters or FilteringEngine()
 
     def scan(self) -> ScanResult:
         """Recursively scans the repository for directories and supported source files.
@@ -102,7 +104,14 @@ class Scanner:
         try:
             # Walk directory tree using Python 3.12 pathlib Path.walk()
             for current_root, dir_names, file_names in self.repository_root.walk():
-                # Process child directories
+                # Filter out ignored directories in-place to prevent walking into skipped trees
+                dir_names[:] = [
+                    d
+                    for d in dir_names
+                    if not self.filters.should_skip_directory(current_root / d)
+                ]
+
+                # Process valid child directories
                 for dir_name in sorted(dir_names):
                     dir_path = current_root / dir_name
                     rel_dir_path = dir_path.relative_to(self.repository_root)
@@ -119,9 +128,10 @@ class Scanner:
                 for file_name in sorted(file_names):
                     total_files_count += 1
                     file_path = current_root / file_name
-                    extension = file_path.suffix.lower()
 
-                    if extension in SUPPORTED_EXTENSIONS:
+                    if self.filters.should_skip_file(file_path):
+                        ignored_files_count += 1
+                    elif self.filters.is_supported_source_file(file_path):
                         source_files_count += 1
                         file_metadata = self.extractor.extract(
                             file_path, self.repository_root
@@ -129,7 +139,6 @@ class Scanner:
                         files.append(file_metadata)
                     else:
                         ignored_files_count += 1
-
 
         except PermissionError as err:
             raise FileAccessError(
