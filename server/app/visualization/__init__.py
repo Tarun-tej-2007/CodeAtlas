@@ -5,6 +5,14 @@ and grouping categories.
 """
 
 from app.visualization.enums import EdgeKind, GroupKind, LayoutKind, NodeKind
+from app.visualization.exceptions import (
+    InvalidVisualizationGraph,
+    LayoutError,
+    SerializationError,
+    TransformationError,
+    VisualizationError,
+    VisualizationValidationError,
+)
 from app.visualization.models import (
     Position,
     VisualizationEdge,
@@ -32,6 +40,14 @@ __all__ = [
     "VisualizationGroup",
     "VisualizationMetadata",
     "VisualizationGraph",
+    # Exceptions
+    "VisualizationError",
+    "InvalidVisualizationGraph",
+    "TransformationError",
+    "SerializationError",
+    "LayoutError",
+    "VisualizationValidationError",
 ]
+
 
 
