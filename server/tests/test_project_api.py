@@ -23,7 +23,7 @@ def test_create_project_success(client):
         json={
             "name": "CodeAtlas Backend Engine",
             "description": "Core visualization platform service.",
-            "visibility": "PRIVATE"
+            "visibility": "private"
         }
     )
 
@@ -35,7 +35,7 @@ def test_create_project_success(client):
     assert data["name"] == "CodeAtlas Backend Engine"
     assert data["slug"] == "codeatlas-backend-engine"
     assert data["description"] == "Core visualization platform service."
-    assert data["visibility"] == "PRIVATE"
+    assert data["visibility"] == "private"
     assert "created_at" in data
     assert "updated_at" in data
 
@@ -137,11 +137,11 @@ def test_list_projects_visibility_and_isolation(client):
     token_b = u_b["access_token"]
 
     # User A creates 1 private project & 1 public project
-    client.post("/api/v1/projects", headers={"Authorization": f"Bearer {token_a}"}, json={"name": "A Private", "visibility": "PRIVATE"})
-    client.post("/api/v1/projects", headers={"Authorization": f"Bearer {token_a}"}, json={"name": "A Public", "visibility": "PUBLIC"})
+    client.post("/api/v1/projects", headers={"Authorization": f"Bearer {token_a}"}, json={"name": "A Private", "visibility": "private"})
+    client.post("/api/v1/projects", headers={"Authorization": f"Bearer {token_a}"}, json={"name": "A Public", "visibility": "public"})
 
     # User B creates 1 private project
-    client.post("/api/v1/projects", headers={"Authorization": f"Bearer {token_b}"}, json={"name": "B Private", "visibility": "PRIVATE"})
+    client.post("/api/v1/projects", headers={"Authorization": f"Bearer {token_b}"}, json={"name": "B Private", "visibility": "private"})
 
     # User B lists projects: should see B Private + A Public (total = 2), but NOT A Private!
     res_b = client.get("/api/v1/projects", headers={"Authorization": f"Bearer {token_b}"})
@@ -248,18 +248,18 @@ def test_list_projects_visibility_filter(client):
     ).json()
     headers = {"Authorization": f"Bearer {reg['access_token']}"}
 
-    client.post("/api/v1/projects", headers=headers, json={"name": "Priv 1", "visibility": "PRIVATE"})
-    client.post("/api/v1/projects", headers=headers, json={"name": "Pub 1", "visibility": "PUBLIC"})
+    client.post("/api/v1/projects", headers=headers, json={"name": "Priv 1", "visibility": "private"})
+    client.post("/api/v1/projects", headers=headers, json={"name": "Pub 1", "visibility": "public"})
 
-    # Filter PRIVATE
-    res_priv = client.get("/api/v1/projects?visibility=PRIVATE", headers=headers)
+    # Filter private
+    res_priv = client.get("/api/v1/projects?visibility=private", headers=headers)
     assert res_priv.status_code == 200
     items_priv = res_priv.json()["items"]
     assert len(items_priv) == 1
     assert items_priv[0]["name"] == "Priv 1"
 
-    # Filter PUBLIC
-    res_pub = client.get("/api/v1/projects?visibility=PUBLIC", headers=headers)
+    # Filter public
+    res_pub = client.get("/api/v1/projects?visibility=public", headers=headers)
     assert res_pub.status_code == 200
     items_pub = res_pub.json()["items"]
     assert len(items_pub) == 1
@@ -296,7 +296,7 @@ def test_get_project_detail_owner_success(client):
     ).json()
     headers = {"Authorization": f"Bearer {reg['access_token']}"}
 
-    create_res = client.post("/api/v1/projects", headers=headers, json={"name": "Private Project Detail", "visibility": "PRIVATE"})
+    create_res = client.post("/api/v1/projects", headers=headers, json={"name": "Private Project Detail", "visibility": "private"})
     project_id = create_res.json()["id"]
 
     response = client.get(f"/api/v1/projects/{project_id}", headers=headers)
@@ -304,7 +304,7 @@ def test_get_project_detail_owner_success(client):
     data = response.json()
     assert data["id"] == project_id
     assert data["name"] == "Private Project Detail"
-    assert data["visibility"] == "PRIVATE"
+    assert data["visibility"] == "private"
 
 def test_get_project_detail_other_user_public_success(client):
     u_owner = client.post(
@@ -319,7 +319,7 @@ def test_get_project_detail_other_user_public_success(client):
     create_res = client.post(
         "/api/v1/projects",
         headers={"Authorization": f"Bearer {u_owner['access_token']}"},
-        json={"name": "Public Shared Project", "visibility": "PUBLIC"}
+        json={"name": "Public Shared Project", "visibility": "public"}
     )
     project_id = create_res.json()["id"]
 
@@ -344,7 +344,7 @@ def test_get_project_detail_other_user_private_returns_404(client):
     create_res = client.post(
         "/api/v1/projects",
         headers={"Authorization": f"Bearer {u_owner['access_token']}"},
-        json={"name": "Secret Private Project", "visibility": "PRIVATE"}
+        json={"name": "Secret Private Project", "visibility": "private"}
     )
     project_id = create_res.json()["id"]
 
@@ -433,16 +433,16 @@ def test_update_project_visibility_only(client):
     ).json()
     headers = {"Authorization": f"Bearer {reg['access_token']}"}
 
-    create_res = client.post("/api/v1/projects", headers=headers, json={"name": "Visibility Toggle", "visibility": "PRIVATE"})
+    create_res = client.post("/api/v1/projects", headers=headers, json={"name": "Visibility Toggle", "visibility": "private"})
     project_id = create_res.json()["id"]
 
     response = client.patch(
         f"/api/v1/projects/{project_id}",
         headers=headers,
-        json={"visibility": "PUBLIC"}
+        json={"visibility": "public"}
     )
     assert response.status_code == 200
-    assert response.json()["visibility"] == "PUBLIC"
+    assert response.json()["visibility"] == "public"
 
 def test_update_project_multiple_fields(client):
     reg = client.post(
@@ -451,20 +451,20 @@ def test_update_project_multiple_fields(client):
     ).json()
     headers = {"Authorization": f"Bearer {reg['access_token']}"}
 
-    create_res = client.post("/api/v1/projects", headers=headers, json={"name": "Old Mult", "visibility": "PRIVATE"})
+    create_res = client.post("/api/v1/projects", headers=headers, json={"name": "Old Mult", "visibility": "private"})
     project_id = create_res.json()["id"]
 
     response = client.patch(
         f"/api/v1/projects/{project_id}",
         headers=headers,
-        json={"name": "New Mult", "description": "New Desc", "visibility": "PUBLIC"}
+        json={"name": "New Mult", "description": "New Desc", "visibility": "public"}
     )
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "New Mult"
     assert data["slug"] == "new-mult"
     assert data["description"] == "New Desc"
-    assert data["visibility"] == "PUBLIC"
+    assert data["visibility"] == "public"
 
 def test_update_project_non_owner_attempt(client):
     u_owner = client.post(
@@ -479,7 +479,7 @@ def test_update_project_non_owner_attempt(client):
     pub_res = client.post(
         "/api/v1/projects",
         headers={"Authorization": f"Bearer {u_owner['access_token']}"},
-        json={"name": "Public Project", "visibility": "PUBLIC"}
+        json={"name": "Public Project", "visibility": "public"}
     )
     pub_id = pub_res.json()["id"]
 
@@ -493,7 +493,7 @@ def test_update_project_non_owner_attempt(client):
     priv_res = client.post(
         "/api/v1/projects",
         headers={"Authorization": f"Bearer {u_owner['access_token']}"},
-        json={"name": "Private Project", "visibility": "PRIVATE"}
+        json={"name": "Private Project", "visibility": "private"}
     )
     priv_id = priv_res.json()["id"]
 
@@ -596,7 +596,7 @@ def test_delete_project_non_owner_attempts(client):
     pub_res = client.post(
         "/api/v1/projects",
         headers={"Authorization": f"Bearer {u_owner['access_token']}"},
-        json={"name": "Public Project Delete", "visibility": "PUBLIC"}
+        json={"name": "Public Project Delete", "visibility": "public"}
     )
     pub_id = pub_res.json()["id"]
 
@@ -609,7 +609,7 @@ def test_delete_project_non_owner_attempts(client):
     priv_res = client.post(
         "/api/v1/projects",
         headers={"Authorization": f"Bearer {u_owner['access_token']}"},
-        json={"name": "Private Project Delete", "visibility": "PRIVATE"}
+        json={"name": "Private Project Delete", "visibility": "private"}
     )
     priv_id = priv_res.json()["id"]
 
@@ -633,6 +633,3 @@ def test_delete_project_unauthenticated(client):
     fake_id = str(uuid.uuid4())
     response = client.delete(f"/api/v1/projects/{fake_id}")
     assert response.status_code == 401
-
-
-
