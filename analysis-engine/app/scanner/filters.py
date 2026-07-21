@@ -20,9 +20,9 @@ class FilteringEngine:
     def __init__(
         self,
         config: ScannerConfig | None = None,
-        ignored_directories: set[str] | None = None,
-        ignored_files: set[str] | None = None,
-        supported_extensions: set[str] | None = None,
+        ignored_directories: set[str] | frozenset[str] | None = None,
+        ignored_files: set[str] | frozenset[str] | None = None,
+        supported_extensions: set[str] | frozenset[str] | None = None,
     ) -> None:
         """Initializes the filtering engine with configuration options and filter sets.
 
@@ -35,23 +35,23 @@ class FilteringEngine:
         self.config = config or ScannerConfig()
 
         if ignored_directories is not None:
-            self.ignored_directories = set(ignored_directories)
+            self.ignored_directories: frozenset[str] = frozenset(ignored_directories)
         elif self.config.respect_default_filters:
-            self.ignored_directories = set(IGNORED_DIRECTORIES)
+            self.ignored_directories = frozenset(IGNORED_DIRECTORIES)
         else:
-            self.ignored_directories = set()
+            self.ignored_directories = frozenset()
 
         if ignored_files is not None:
-            self.ignored_files = set(ignored_files)
+            self.ignored_files: frozenset[str] = frozenset(ignored_files)
         elif self.config.respect_default_filters:
-            self.ignored_files = set(IGNORED_FILES)
+            self.ignored_files = frozenset(IGNORED_FILES)
         else:
-            self.ignored_files = set()
+            self.ignored_files = frozenset()
 
-        self.supported_extensions = (
-            set(supported_extensions)
+        self.supported_extensions: frozenset[str] = (
+            frozenset(supported_extensions)
             if supported_extensions is not None
-            else set(SUPPORTED_EXTENSIONS)
+            else frozenset(SUPPORTED_EXTENSIONS)
         )
 
     def should_skip_symlink(self, path: Path) -> bool:
@@ -63,9 +63,12 @@ class FilteringEngine:
         Returns:
             True if path is a symlink and follow_symlinks is False, False otherwise.
         """
-        if not self.config.follow_symlinks and path.is_symlink():
+        if self.config.follow_symlinks:
+            return False
+        try:
+            return path.is_symlink()
+        except (OSError, ValueError):
             return True
-        return False
 
     def should_skip_directory(self, directory: Path) -> bool:
         """Determines if a directory should be skipped during repository scanning.
@@ -91,11 +94,14 @@ class FilteringEngine:
 
         return False
 
-    def should_skip_file(self, file_path: Path) -> bool:
+    def should_skip_file(
+        self, file_path: Path, extension: str | None = None
+    ) -> bool:
         """Determines if a file should be skipped during repository scanning.
 
         Args:
             file_path: Target file Path.
+            extension: Optional pre-computed lowercase file extension.
 
         Returns:
             True if the file matches ignore sets, symlink rules, or hidden file rules.
@@ -111,20 +117,23 @@ class FilteringEngine:
             return True
 
         if not self.config.include_hidden and filename.startswith("."):
-            extension = file_path.suffix.lower()
-            if extension not in self.supported_extensions:
+            ext = extension if extension is not None else file_path.suffix.lower()
+            if ext not in self.supported_extensions:
                 return True
 
         return False
 
-    def is_supported_source_file(self, file_path: Path) -> bool:
+    def is_supported_source_file(
+        self, file_path: Path, extension: str | None = None
+    ) -> bool:
         """Checks if a file extension matches supported source code extensions.
 
         Args:
             file_path: Target file Path.
+            extension: Optional pre-computed lowercase file extension.
 
         Returns:
             True if the file extension is supported, False otherwise.
         """
-        extension = file_path.suffix.lower()
-        return extension in self.supported_extensions
+        ext = extension if extension is not None else file_path.suffix.lower()
+        return ext in self.supported_extensions

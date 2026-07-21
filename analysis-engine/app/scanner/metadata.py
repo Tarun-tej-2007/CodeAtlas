@@ -19,12 +19,18 @@ class FileMetadataExtractor:
         """Initializes the metadata extractor."""
         pass
 
-    def extract(self, file_path: Path, repository_root: Path) -> FileMetadata:
+    def extract(
+        self,
+        file_path: Path,
+        repository_root: Path,
+        extension: str | None = None,
+    ) -> FileMetadata:
         """Extracts filesystem metadata for a given file relative to repository root.
 
         Args:
             file_path: Absolute path to the target file.
             repository_root: Absolute path to the repository root directory.
+            extension: Optional pre-computed lowercase file extension.
 
         Returns:
             An immutable FileMetadata instance containing filesystem attributes and language info.
@@ -51,16 +57,23 @@ class FileMetadataExtractor:
             ) from err
 
         filename = file_path.name
-        extension = file_path.suffix.lower()
+        ext = extension if extension is not None else file_path.suffix.lower()
         size_bytes = stat_result.st_size
-        modified_at = datetime.fromtimestamp(stat_result.st_mtime, tz=timezone.utc)
-        language = EXTENSION_LANGUAGE_MAP.get(extension)
+
+        try:
+            modified_at = datetime.fromtimestamp(
+                stat_result.st_mtime, tz=timezone.utc
+            )
+        except (ValueError, OverflowError, OSError):
+            modified_at = datetime.fromtimestamp(0, tz=timezone.utc)
+
+        language = EXTENSION_LANGUAGE_MAP.get(ext)
 
         return FileMetadata(
             path=file_path,
             relative_path=relative_path,
             filename=filename,
-            extension=extension,
+            extension=ext,
             size_bytes=size_bytes,
             modified_at=modified_at,
             language=language,
