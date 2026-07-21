@@ -23,7 +23,11 @@ from app.scanner.models import (
     ScanStatistics,
 )
 
+from app.scanner.scanner import Scanner
+
 __all__ = [
+    # Scanner Engine
+    "Scanner",
     # Models
     "FileMetadata",
     "DirectoryMetadata",
@@ -41,3 +45,4 @@ __all__ = [
     "IGNORED_DIRECTORIES",
     "IGNORED_FILES",
 ]
+
