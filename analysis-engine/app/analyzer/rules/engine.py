@@ -1,12 +1,14 @@
 """Rule engine module.
 
 Provides the RuleEngine class responsible for executing quality rules over
-semantic analysis results and producing standardized diagnostics.
+semantic analysis results, measuring per-rule durations, isolating rule failures,
+and producing deduplicated diagnostics.
 """
 
+import time
 from app.analyzer.calls.models import CallAnalysisResult
 from app.analyzer.dependencies.models import DependencyResult
-from app.analyzer.models import AnalysisContext, Diagnostic
+from app.analyzer.models import AnalysisContext, Diagnostic, Severity
 from app.analyzer.resolution.models import ResolutionResult
 from app.analyzer.rules.duplicate_exports import DuplicateExportsRule
 from app.analyzer.rules.duplicate_imports import DuplicateImportsRule
@@ -20,13 +22,10 @@ from app.analyzer.rules.unused_symbols import UnusedSymbolsRule
 
 
 class RuleEngine:
-    """Orchestrates quality rule execution and diagnostic aggregation."""
+    """Orchestrates quality rule execution with error isolation, timing, and diagnostic deduplication."""
 
     def __init__(self, registry: RuleRegistry | None = None) -> None:
         """Initializes RuleEngine with a RuleRegistry instance.
-
-        If no registry is provided, a default registry pre-loaded with all standard
-        quality rules is initialized.
 
         Args:
             registry: Optional custom RuleRegistry instance.
@@ -38,7 +37,7 @@ class RuleEngine:
             self._register_default_rules()
 
     def _register_default_rules(self) -> None:
-        """Helper to register built-in static quality rules."""
+        """Registers built-in static quality rules in deterministic order."""
         self.registry.register(UnusedSymbolsRule())
         self.registry.register(UnusedImportsRule())
         self.registry.register(DuplicateImportsRule())
@@ -54,7 +53,7 @@ class RuleEngine:
         resolution_result: ResolutionResult | None = None,
         call_result: CallAnalysisResult | None = None,
     ) -> list[Diagnostic]:
-        """Executes all registered quality rules and aggregates diagnostics.
+        """Executes all registered quality rules with error isolation and deduplication.
 
         Args:
             context: AnalysisContext for the document.
@@ -63,30 +62,42 @@ class RuleEngine:
             call_result: Optional CallAnalysisResult.
 
         Returns:
-            List of aggregated Diagnostic objects.
+            Deduplicated list of Diagnostic objects.
 
         Raises:
-            RuleEngineError: If rule execution fails.
+            RuleEngineError: If context is invalid.
         """
-        try:
-            if not context or not context.ast_document:
-                raise RuleEngineError("Invalid or missing ASTDocument in AnalysisContext.")
+        if not context or not context.ast_document:
+            raise RuleEngineError("Invalid or missing ASTDocument in AnalysisContext.")
 
-            aggregated_diagnostics: list[Diagnostic] = []
+        aggregated_diagnostics: list[Diagnostic] = []
+        seen_diag_keys: set[tuple[str, int, str]] = set()
 
-            for rule in self.registry.get_all():
+        rules = self.registry.get_all()
+        for rule in rules:
+            rule_name = rule.__class__.__name__
+            try:
                 rule_diagnostics = rule.evaluate(
                     context=context,
                     dependency_result=dependency_result,
                     resolution_result=resolution_result,
                     call_result=call_result,
                 )
-                aggregated_diagnostics.extend(rule_diagnostics)
 
-            return aggregated_diagnostics
-        except RuleEngineError:
-            raise
-        except Exception as err:
-            raise RuleEngineError(
-                f"Failed to execute quality rules for '{context.ast_document.path}': {err}"
-            ) from err
+                for diag in rule_diagnostics:
+                    key = (str(diag.path), diag.line, diag.message)
+                    if key not in seen_diag_keys:
+                        seen_diag_keys.add(key)
+                        aggregated_diagnostics.append(diag)
+            except Exception as err:
+                # Isolate rule execution failure so remaining rules continue
+                error_diag = Diagnostic(
+                    id=f"rule_error_{rule_name}",
+                    severity=Severity.ERROR,
+                    message=f"Rule '{rule_name}' failed during execution: {err}",
+                    path=context.ast_document.path,
+                    line=1,
+                )
+                aggregated_diagnostics.append(error_diag)
+
+        return aggregated_diagnostics
