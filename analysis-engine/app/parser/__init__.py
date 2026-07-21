@@ -12,8 +12,9 @@ from app.parser.exceptions import (
 )
 from app.parser.language import Language
 from app.parser.models import ParsedFile, ParseResult
-from app.parser.parser import BaseParser, create_treesitter_parser
+from app.parser.parser import BaseParser, TreeSitterParser, create_treesitter_parser
 from app.parser.registry import ParserRegistry
+from app.parser.repository_parser import RepositoryParser
 
 __all__ = [
     # Canonical Language Enum
@@ -26,9 +27,12 @@ __all__ = [
     "UnsupportedLanguageError",
     "ParserInitializationError",
     "ParseFailureError",
-    # Parser Base Interface & Helper
+    # Parser Base Interface, Implementations & Helper
     "BaseParser",
+    "TreeSitterParser",
     "create_treesitter_parser",
-    # Parser Registry
+    # Registry & Repository Parser
     "ParserRegistry",
+    "RepositoryParser",
 ]
+
