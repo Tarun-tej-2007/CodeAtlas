@@ -11,8 +11,9 @@ class Visibility(str, enum.Enum):
     INTERNAL = "INTERNAL"
 
 class ProjectVisibility(str, enum.Enum):
-    PRIVATE = "PRIVATE"
-    PUBLIC = "PUBLIC"
+    PRIVATE = "private"
+    PUBLIC = "public"
+
 
 
 class RepositoryProvider(str, enum.Enum):
