@@ -23,15 +23,18 @@ from app.scanner.models import (
     ScanStatistics,
 )
 
+from app.scanner.config import ScannerConfig
 from app.scanner.filters import FilteringEngine
 from app.scanner.metadata import FileMetadataExtractor
 from app.scanner.scanner import Scanner
 
 __all__ = [
-    # Scanner Engine, Extractor & Filters
+    # Config & Pipeline Engine
     "Scanner",
+    "ScannerConfig",
     "FileMetadataExtractor",
     "FilteringEngine",
+
 
 
     # Models

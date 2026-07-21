@@ -1,11 +1,12 @@
 """Scan filtering and exclusion module.
 
 Provides the FilteringEngine class responsible for evaluating whether files
-or directories should be traversed, processed, or skipped.
+or directories should be traversed, processed, or skipped based on configuration options.
 """
 
 from pathlib import Path
 
+from app.scanner.config import ScannerConfig
 from app.scanner.constants import (
     IGNORED_DIRECTORIES,
     IGNORED_FILES,
@@ -18,30 +19,53 @@ class FilteringEngine:
 
     def __init__(
         self,
+        config: ScannerConfig | None = None,
         ignored_directories: set[str] | None = None,
         ignored_files: set[str] | None = None,
         supported_extensions: set[str] | None = None,
     ) -> None:
-        """Initializes the filtering engine with default or custom filter sets.
+        """Initializes the filtering engine with configuration options and filter sets.
 
         Args:
-            ignored_directories: Set of directory names to ignore. Defaults to IGNORED_DIRECTORIES.
-            ignored_files: Set of filenames to ignore. Defaults to IGNORED_FILES.
-            supported_extensions: Set of supported file extensions. Defaults to SUPPORTED_EXTENSIONS.
+            config: Optional ScannerConfig instance controlling filtering behavior.
+            ignored_directories: Optional custom set of directory names to ignore.
+            ignored_files: Optional custom set of filenames to ignore.
+            supported_extensions: Optional custom set of supported file extensions.
         """
-        self.ignored_directories = (
-            ignored_directories
-            if ignored_directories is not None
-            else set(IGNORED_DIRECTORIES)
-        )
-        self.ignored_files = (
-            ignored_files if ignored_files is not None else set(IGNORED_FILES)
-        )
+        self.config = config or ScannerConfig()
+
+        if ignored_directories is not None:
+            self.ignored_directories = set(ignored_directories)
+        elif self.config.respect_default_filters:
+            self.ignored_directories = set(IGNORED_DIRECTORIES)
+        else:
+            self.ignored_directories = set()
+
+        if ignored_files is not None:
+            self.ignored_files = set(ignored_files)
+        elif self.config.respect_default_filters:
+            self.ignored_files = set(IGNORED_FILES)
+        else:
+            self.ignored_files = set()
+
         self.supported_extensions = (
-            supported_extensions
+            set(supported_extensions)
             if supported_extensions is not None
             else set(SUPPORTED_EXTENSIONS)
         )
+
+    def should_skip_symlink(self, path: Path) -> bool:
+        """Determines if a symbolic link should be skipped based on configuration.
+
+        Args:
+            path: Target path to check for symlink status.
+
+        Returns:
+            True if path is a symlink and follow_symlinks is False, False otherwise.
+        """
+        if not self.config.follow_symlinks and path.is_symlink():
+            return True
+        return False
 
     def should_skip_directory(self, directory: Path) -> bool:
         """Determines if a directory should be skipped during repository scanning.
@@ -50,13 +74,19 @@ class FilteringEngine:
             directory: Target directory Path.
 
         Returns:
-            True if the directory is ignored or hidden dot-prefixed, False otherwise.
+            True if the directory is ignored, a symlink (when not followed), or hidden dot-prefixed.
         """
+        if self.should_skip_symlink(directory):
+            return True
+
         dir_name = directory.name
         if not dir_name:
             return False
 
-        if dir_name in self.ignored_directories or dir_name.startswith("."):
+        if dir_name in self.ignored_directories:
+            return True
+
+        if not self.config.include_hidden and dir_name.startswith("."):
             return True
 
         return False
@@ -68,8 +98,11 @@ class FilteringEngine:
             file_path: Target file Path.
 
         Returns:
-            True if the file matches ignore sets or hidden file rules, False otherwise.
+            True if the file matches ignore sets, symlink rules, or hidden file rules.
         """
+        if self.should_skip_symlink(file_path):
+            return True
+
         filename = file_path.name
         if not filename:
             return True
@@ -77,7 +110,7 @@ class FilteringEngine:
         if filename in self.ignored_files:
             return True
 
-        if filename.startswith("."):
+        if not self.config.include_hidden and filename.startswith("."):
             extension = file_path.suffix.lower()
             if extension not in self.supported_extensions:
                 return True
