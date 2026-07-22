@@ -10,6 +10,12 @@ from app.graph.graph import Graph
 from app.graph.models import GraphEdge, GraphMetadata, GraphNode
 from app.graph.query import GraphQueryEngine, GraphQueryError
 from app.graph.serialization import GraphSerializationError, GraphSerializer
+from app.graph.diff import (
+    GraphDiffEngine,
+    GraphDiff,
+    GraphDiffError,
+    InvalidGraphComparison,
+)
 
 __all__ = [
     # Enums
@@ -27,4 +33,10 @@ __all__ = [
     "Graph",
     "GraphQueryEngine",
     "GraphSerializer",
+    # Diff Engine
+    "GraphDiffEngine",
+    "GraphDiff",
+    "GraphDiffError",
+    "InvalidGraphComparison",
 ]
+
