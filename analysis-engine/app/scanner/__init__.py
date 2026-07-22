@@ -27,6 +27,7 @@ from app.scanner.models import (
     ScanStatistics,
     DiscoveredFile,
     DiscoveryResult,
+    Language,
 )
 
 from app.scanner.config import ScannerConfig
@@ -34,6 +35,7 @@ from app.scanner.filters import FilteringEngine
 from app.scanner.metadata import FileMetadataExtractor
 from app.scanner.scanner import Scanner
 from app.scanner.discovery import FileDiscoveryService
+from app.scanner.language_detector import LanguageDetector
 
 __all__ = [
     # Config & Pipeline Engine
@@ -48,6 +50,7 @@ __all__ = [
     "ScanResult",
     "DiscoveredFile",
     "DiscoveryResult",
+    "Language",
     # Exceptions
     "ScannerError",
     "RepositoryNotFoundError",
@@ -65,6 +68,7 @@ __all__ = [
     "IGNORED_FILES",
     # Service
     "FileDiscoveryService",
+    "LanguageDetector",
 ]
 
 

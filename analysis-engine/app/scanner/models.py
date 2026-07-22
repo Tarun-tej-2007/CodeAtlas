@@ -5,8 +5,19 @@ scan performance statistics, and overall repository scan results.
 """
 
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class Language(str, Enum):
+    """Supported programming languages in the CodeAtlas Analysis Engine."""
+
+    UNKNOWN = "unknown"
+    PYTHON = "python"
+    JAVASCRIPT = "javascript"
+    TYPESCRIPT = "typescript"
+
 
 
 class FileMetadata(BaseModel):
@@ -59,6 +70,7 @@ class DiscoveredFile(BaseModel):
     relative_path: Path = Field(..., description="Relative path relative to repository root.")
     extension: str = Field(..., description="File extension including leading dot.")
     size: int = Field(..., ge=0, description="File size in bytes.")
+    language: Language = Field(default=Language.UNKNOWN, description="Detected programming language.")
 
     model_config = ConfigDict(frozen=True)
 
