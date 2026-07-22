@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.parser.language import Language
+from app.scanner.models import Language
+
 
 
 class ParsedFile(BaseModel):
