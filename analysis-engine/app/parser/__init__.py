@@ -12,7 +12,7 @@ from app.parser.exceptions import (
     ParseError,
 )
 from app.parser.language import Language
-from app.parser.models import ParsedFile, ParseResult
+from app.parser.models import ParsedFile, ParseResult, AnalysisResult
 from app.parser.parser import (
     BaseParser,
     TreeSitterParser,
@@ -33,6 +33,7 @@ __all__ = [
     # Data Models
     "ParsedFile",
     "ParseResult",
+    "AnalysisResult",
     # Exceptions
     "ParserError",
     "UnsupportedLanguageError",

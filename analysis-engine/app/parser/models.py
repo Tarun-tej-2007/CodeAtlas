@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.scanner.models import Language
+from app.scanner.models import Language, ScanResult
 
 
 
@@ -31,3 +31,13 @@ class ParseResult(BaseModel):
     parsed_count: int = Field(default=0, ge=0, description="Count of successfully parsed files.")
     failed_count: int = Field(default=0, ge=0, description="Count of files that failed parsing.")
     parse_duration_ms: float = Field(default=0.0, ge=0.0, description="Total parsing duration in milliseconds.")
+
+
+class AnalysisResult(BaseModel):
+    """Aggregate result holding both scanner and parsing pipeline outputs."""
+
+    scan_result: ScanResult
+    parse_result: ParseResult
+
+    model_config = ConfigDict(frozen=True)
+
