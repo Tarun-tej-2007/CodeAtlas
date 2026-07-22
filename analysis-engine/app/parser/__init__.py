@@ -25,6 +25,7 @@ from app.parser.base import SourceCodeParser
 from app.parser.python_parser import PythonParser
 from app.parser.javascript_parser import JavaScriptParser
 from app.parser.typescript_parser import TypeScriptParser
+from app.parser.pipeline import ParsingPipeline
 
 __all__ = [
     # Canonical Language Enum
@@ -47,6 +48,7 @@ __all__ = [
     "PythonParser",
     "JavaScriptParser",
     "TypeScriptParser",
+    "ParsingPipeline",
     # Registry & Repository Parser
     "ParserRegistry",
     "RepositoryParser",
