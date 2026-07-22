@@ -40,6 +40,16 @@ from app.visualization.pipeline import (
     LayoutStageError,
     SerializationStageError,
 )
+from app.visualization.performance import (
+    VisualizationCache,
+    InMemoryVisualizationCache,
+    generate_graph_cache_key,
+    VisualizationProfiler,
+    VisualizationMetrics,
+    VisualizationPerformanceError,
+    CacheError as PerfCacheError,  # Rename to prevent potential collision
+    ProfilerError,
+)
 
 __all__ = [
     # Enums
@@ -82,6 +92,16 @@ __all__ = [
     "TransformationStageError",
     "LayoutStageError",
     "SerializationStageError",
+    # Performance
+    "VisualizationCache",
+    "InMemoryVisualizationCache",
+    "generate_graph_cache_key",
+    "VisualizationProfiler",
+    "VisualizationMetrics",
+    "VisualizationPerformanceError",
+    "PerfCacheError",
+    "ProfilerError",
 ]
+
 
 
