@@ -1,4 +1,4 @@
-"""Integration test suite for the complete Sprint 11 execution pipeline."""
+"""Integration test suite for the complete AnalysisService static analysis and parsing pipeline."""
 
 import os
 import shutil
@@ -9,13 +9,14 @@ from pathlib import Path
 
 from app.core.config import settings
 from app.workspace import WorkspaceManager
-from app.repositories import RepositoryCloneService, RepositoryNotFoundError
+from app.repositories import RepositoryCloneService
 from app.scanner import ScannerPipeline, Language, ScanResult
+from app.parser import ParsingPipeline, ParseResult, AnalysisResult
 from app.services import AnalysisService
 
 
 class TestIntegrationPipeline(unittest.TestCase):
-    """End-to-end integration tests traversing all pipeline boundaries."""
+    """End-to-end integration tests traversing scanning and parsing pipeline boundaries."""
 
     def setUp(self) -> None:
         self.project_id = uuid.uuid4()
@@ -30,11 +31,13 @@ class TestIntegrationPipeline(unittest.TestCase):
         )
         self.clone_service = RepositoryCloneService()
         self.scanner_pipeline = ScannerPipeline()
+        self.parsing_pipeline = ParsingPipeline()
         
         self.service = AnalysisService(
             workspace_manager=self.workspace_manager,
             clone_service=self.clone_service,
             scanner_pipeline=self.scanner_pipeline,
+            parsing_pipeline=self.parsing_pipeline,
         )
 
     def tearDown(self) -> None:
@@ -76,32 +79,38 @@ class TestIntegrationPipeline(unittest.TestCase):
             project_id=self.project_id
         )
 
-        # Assert ScanResult schema outputs
-        self.assertIsInstance(result, ScanResult)
+        # Assert AnalysisResult layout
+        self.assertIsInstance(result, AnalysisResult)
         
-        # 5. Verify counts
-        # Discovered files (excluding .git and node_modules):
-        # - main.py
-        # - index.js
-        # - Component.tsx
-        # - LICENSE
-        # - SCRIPT.PY
-        # - src/components/utils/helper.ts
-        # Total = 6 files.
-        self.assertEqual(result.total_files, 6)
-        self.assertEqual(result.supported_files, 5)    # py, js, tsx, PY, ts
-        self.assertEqual(result.unsupported_files, 1)  # LICENSE
+        scan_res = result.scan_result
+        parse_res = result.parse_result
+
+        # 5. Verify scanning counts
+        self.assertEqual(scan_res.total_files, 6)
+        self.assertEqual(scan_res.supported_files, 5)    # py, js, tsx, PY, ts
+        self.assertEqual(scan_res.unsupported_files, 1)  # LICENSE
 
         # 6. Verify languages counts mapping
-        self.assertEqual(result.languages[Language.PYTHON], 2)
-        self.assertEqual(result.languages[Language.JAVASCRIPT], 1)
-        self.assertEqual(result.languages[Language.TYPESCRIPT], 2)
-        self.assertEqual(result.languages[Language.UNKNOWN], 1)
+        self.assertEqual(scan_res.languages[Language.PYTHON], 2)
+        self.assertEqual(scan_res.languages[Language.JAVASCRIPT], 1)
+        self.assertEqual(scan_res.languages[Language.TYPESCRIPT], 2)
+        self.assertEqual(scan_res.languages[Language.UNKNOWN], 1)
 
         # 7. Check scan duration
-        self.assertGreater(result.scan_duration, 0.0)
+        self.assertGreater(scan_res.scan_duration, 0.0)
 
-        # 8. Check that workspace cleanup was executed
+        # 8. Verify parsing results
+        # Supported files (py, js, tsx, PY, ts) are parsed
+        self.assertEqual(parse_res.parsed_count, 5)
+        self.assertEqual(parse_res.failed_count, 0)
+        self.assertEqual(len(parse_res.files), 5)
+
+        # Confirm syntax trees are generated
+        for parsed_file in parse_res.files:
+            self.assertIsNotNone(parsed_file.tree)
+            self.assertIsNotNone(parsed_file.tree.root_node)
+
+        # 9. Check that workspace cleanup was executed
         workspace_path = self.workspace_manager.get_workspace_path(self.project_id)
         self.assertFalse(workspace_path.exists())
 
@@ -113,9 +122,15 @@ class TestIntegrationPipeline(unittest.TestCase):
         )
         
         # Assert empty result
-        self.assertEqual(result.total_files, 0)
-        self.assertEqual(result.supported_files, 0)
-        self.assertEqual(result.unsupported_files, 0)
+        scan_res = result.scan_result
+        parse_res = result.parse_result
+
+        self.assertEqual(scan_res.total_files, 0)
+        self.assertEqual(scan_res.supported_files, 0)
+        self.assertEqual(scan_res.unsupported_files, 0)
+
+        self.assertEqual(parse_res.parsed_count, 0)
+        self.assertEqual(parse_res.failed_count, 0)
         
         # Verify workspace cleanup
         workspace_path = self.workspace_manager.get_workspace_path(self.project_id)
@@ -131,10 +146,16 @@ class TestIntegrationPipeline(unittest.TestCase):
             project_id=self.project_id
         )
 
-        self.assertEqual(result.total_files, 2)
-        self.assertEqual(result.supported_files, 0)
-        self.assertEqual(result.unsupported_files, 2)
-        self.assertEqual(result.languages[Language.UNKNOWN], 2)
+        scan_res = result.scan_result
+        parse_res = result.parse_result
+
+        self.assertEqual(scan_res.total_files, 2)
+        self.assertEqual(scan_res.supported_files, 0)
+        self.assertEqual(scan_res.unsupported_files, 2)
+        self.assertEqual(scan_res.languages[Language.UNKNOWN], 2)
+
+        self.assertEqual(parse_res.parsed_count, 0)
+        self.assertEqual(parse_res.failed_count, 0)
 
     def test_large_scale_file_count_performance(self) -> None:
         # Scale: Create 200 dummy files inside the source directory
@@ -148,10 +169,16 @@ class TestIntegrationPipeline(unittest.TestCase):
             project_id=self.project_id
         )
 
-        self.assertEqual(result.total_files, 200)
-        self.assertEqual(result.supported_files, 200)
+        scan_res = result.scan_result
+        parse_res = result.parse_result
+
+        self.assertEqual(scan_res.total_files, 200)
+        self.assertEqual(scan_res.supported_files, 200)
         # Traversal and analysis should be extremely quick (sub-second)
-        self.assertLess(result.scan_duration, 1.0)
+        self.assertLess(scan_res.scan_duration, 1.0)
+
+        self.assertEqual(parse_res.parsed_count, 200)
+        self.assertEqual(parse_res.failed_count, 0)
 
 
 if __name__ == "__main__":

@@ -49,7 +49,6 @@ class ParsingPipeline:
             # Skip unknown languages immediately as failed/unsupported
             if discovered_file.language == discovered_file.language.UNKNOWN:
                 logger.warning("Unsupported language or file without extension: %s", discovered_file.absolute_path)
-                failed_count += 1
                 continue
 
             try:

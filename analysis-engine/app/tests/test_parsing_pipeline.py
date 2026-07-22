@@ -115,9 +115,9 @@ class TestParsingPipeline(unittest.TestCase):
 
         result = self.pipeline.parse_files([discovered])
 
-        # UNKNOWN is immediately bypassed as failed/unsupported
+        # UNKNOWN is immediately bypassed as unsupported without counting as parse error
         self.assertEqual(result.parsed_count, 0)
-        self.assertEqual(result.failed_count, 1)
+        self.assertEqual(result.failed_count, 0)
 
     def test_plugin_lookup_failure_handled(self) -> None:
         # 4. Plugin lookup failure handling (e.g. if plugin registry doesn't have the language)
