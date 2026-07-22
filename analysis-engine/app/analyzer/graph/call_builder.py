@@ -7,9 +7,10 @@ behavioral EdgeType.CALLS relationships using CallAnalysisResult objects.
 from typing import Any
 from app.analyzer.calls.models import CallAnalysisResult
 from app.analyzer.models import AnalysisContext
-from app.graph.builder import BaseGraphBuilder
+from app.analyzer.graph.builder import BaseGraphBuilder
+from app.analyzer.graph.exceptions import GraphBuilderError
 from app.graph.enums import EdgeType
-from app.graph.exceptions import GraphBuilderError, GraphError
+from app.graph.exceptions import GraphError
 from app.graph.graph import Graph
 from app.graph.models import GraphEdge
 

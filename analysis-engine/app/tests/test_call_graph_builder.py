@@ -7,11 +7,13 @@ from app.analyzer import AnalysisContext
 from app.analyzer.calls import CallAnalyzer, CallKind
 from app.analyzer.resolution import SymbolResolver
 from app.graph import (
-    CallGraphBuilder,
     EdgeType,
     Graph,
-    GraphBuilderError,
     NodeType,
+)
+from app.analyzer.graph import (
+    CallGraphBuilder,
+    GraphBuilderError,
     SymbolGraphBuilder,
 )
 from app.parser import Language, ParsedFile, TreeSitterParser

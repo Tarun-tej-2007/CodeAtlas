@@ -1,7 +1,7 @@
-"""CodeAtlas visualization domain package.
+"""CodeAtlas visualization engine package.
 
-Provides renderer-agnostic enumeration types for node kinds, edge kinds, layout strategies,
-and grouping categories.
+Provides enums, style models, domain models, exceptions, transformer, and serializer
+for renderer-agnostic codebase codebase visualization.
 """
 
 from app.visualization.enums import EdgeKind, GroupKind, LayoutKind, NodeKind
@@ -21,7 +21,9 @@ from app.visualization.models import (
     VisualizationMetadata,
     VisualizationNode,
 )
+from app.visualization.serializer import VisualizationSerializer
 from app.visualization.styles import EdgeStyle, GroupStyle, NodeStyle
+from app.visualization.transformers import VisualizationTransformer
 
 __all__ = [
     # Enums
@@ -47,7 +49,8 @@ __all__ = [
     "SerializationError",
     "LayoutError",
     "VisualizationValidationError",
+    # Transformers
+    "VisualizationTransformer",
+    # Serializers
+    "VisualizationSerializer",
 ]
-
-
-

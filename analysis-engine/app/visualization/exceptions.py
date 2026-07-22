@@ -24,13 +24,13 @@ class TransformationError(VisualizationError):
 
 
 class SerializationError(VisualizationError):
-    """Raised when visualization graph serialization or deserialization fails."""
+    """Raised when visualization serialization cannot be completed."""
 
     pass
 
 
 class LayoutError(VisualizationError):
-    """Raised when spatial layout calculation fails."""
+    """Raised when layout computation fails."""
 
     pass
 
