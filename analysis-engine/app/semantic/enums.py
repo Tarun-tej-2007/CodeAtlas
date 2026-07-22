@@ -31,9 +31,14 @@ class ScopeKind(StrEnum):
     INTERFACE = "interface"
     FUNCTION = "function"
     METHOD = "method"
+    LAMBDA = "lambda"
     BLOCK = "block"
+    LOOP = "loop"
+    CONDITIONAL = "conditional"
+    TRY_CATCH = "try_catch"
     NAMESPACE = "namespace"
     UNKNOWN = "unknown"
+
 
 
 class ReferenceKind(StrEnum):
