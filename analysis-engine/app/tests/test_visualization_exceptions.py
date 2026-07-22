@@ -1,7 +1,6 @@
 """Unit test suite for visualization exception hierarchy."""
 
 import unittest
-import pytest
 from app.visualization import (
     InvalidVisualizationGraph,
     LayoutError,
@@ -25,29 +24,34 @@ class TestVisualizationExceptions(unittest.TestCase):
 
     def test_exception_raising_and_message_preservation(self) -> None:
         msg = "Structurally invalid visualization graph: duplicate node ID 'node_1'"
-        with pytest.raises(InvalidVisualizationGraph) as exc_info:
+        try:
             raise InvalidVisualizationGraph(msg)
-        self.assertEqual(str(exc_info.value), msg)
+        except InvalidVisualizationGraph as err:
+            self.assertEqual(str(err), msg)
 
         msg_trans = "Transformation from RepositoryGraph failed"
-        with pytest.raises(TransformationError) as exc_info:
+        try:
             raise TransformationError(msg_trans)
-        self.assertEqual(str(exc_info.value), msg_trans)
+        except TransformationError as err:
+            self.assertEqual(str(err), msg_trans)
 
         msg_ser = "Failed to serialize visualization model"
-        with pytest.raises(SerializationError) as exc_info:
+        try:
             raise SerializationError(msg_ser)
-        self.assertEqual(str(exc_info.value), msg_ser)
+        except SerializationError as err:
+            self.assertEqual(str(err), msg_ser)
 
         msg_layout = "Layout computation failed for force_directed strategy"
-        with pytest.raises(LayoutError) as exc_info:
+        try:
             raise LayoutError(msg_layout)
-        self.assertEqual(str(exc_info.value), msg_layout)
+        except LayoutError as err:
+            self.assertEqual(str(err), msg_layout)
 
         msg_val = "Visualization validation failed"
-        with pytest.raises(VisualizationValidationError) as exc_info:
+        try:
             raise VisualizationValidationError(msg_val)
-        self.assertEqual(str(exc_info.value), msg_val)
+        except VisualizationValidationError as err:
+            self.assertEqual(str(err), msg_val)
 
     def test_catching_subclasses_with_base_exception(self) -> None:
         try:

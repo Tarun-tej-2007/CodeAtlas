@@ -6,9 +6,10 @@ structural codebase graph containing project, file, and symbol declaration hiera
 
 from typing import Any
 from app.analyzer.models import AnalysisContext
-from app.graph.builder import BaseGraphBuilder
+from app.analyzer.graph.builder import BaseGraphBuilder
+from app.analyzer.graph.exceptions import GraphBuilderError
 from app.graph.enums import EdgeType, NodeType
-from app.graph.exceptions import GraphBuilderError, GraphError
+from app.graph.exceptions import GraphError
 from app.graph.graph import Graph
 from app.graph.models import GraphEdge, GraphMetadata, GraphNode
 from app.parser.symbols.models import SymbolKind

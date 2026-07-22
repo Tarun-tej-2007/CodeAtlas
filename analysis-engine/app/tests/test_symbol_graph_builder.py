@@ -7,8 +7,10 @@ from app.analyzer import AnalysisContext
 from app.graph import (
     EdgeType,
     Graph,
-    GraphBuilderError,
     NodeType,
+)
+from app.analyzer.graph import (
+    GraphBuilderError,
     SymbolGraphBuilder,
 )
 from app.parser import Language, ParsedFile, TreeSitterParser

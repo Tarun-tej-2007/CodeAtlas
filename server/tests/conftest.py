@@ -6,6 +6,7 @@ import os
 # Add server directory to python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+
 # Set environment variables for testing before loading settings
 os.environ["SECRET_KEY"] = "test-secret-key-12345-test-secret-key-12345"
 # Reuses postgresql schema during engine load to prevent SQLite pool config arguments error
