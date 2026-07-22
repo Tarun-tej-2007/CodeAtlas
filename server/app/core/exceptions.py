@@ -59,4 +59,25 @@ class ProjectForbiddenError(Exception):
     pass
 
 
+class AnalysisEngineError(Exception):
+    """Base exception for all Analysis Engine communication errors."""
+    pass
+
+
+class AnalysisEngineConnectionError(AnalysisEngineError):
+    """Raised when connecting to the Analysis Engine fails."""
+    pass
+
+
+class AnalysisEngineTimeoutError(AnalysisEngineError):
+    """Raised when a request to the Analysis Engine times out."""
+    pass
+
+
+class AnalysisEngineRequestError(AnalysisEngineError):
+    """Raised when the Analysis Engine returns a client/request error (4xx)."""
+    pass
+
+
+
 

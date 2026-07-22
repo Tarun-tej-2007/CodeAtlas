@@ -1,6 +1,6 @@
 import uuid
 from typing import Any, Literal
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, Header, status
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -15,7 +15,15 @@ from app.schemas.project import (
     PaginatedProjectResponse,
 )
 from app.services.project import ProjectService
-from app.core.exceptions import ProjectNotFoundError, ProjectForbiddenError
+from app.core.exceptions import (
+    ProjectNotFoundError,
+    ProjectForbiddenError,
+    AnalysisEngineConnectionError,
+    AnalysisEngineTimeoutError,
+    AnalysisEngineRequestError,
+)
+from app.schemas.analysis import AnalysisResponse
+from app.services.analysis_engine import AnalysisEngineClient
 
 
 
@@ -302,4 +310,67 @@ def delete_project(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e) or "Forbidden",
         )
+
+
+
+@router.post(
+    "/{project_id}/analyze",
+    response_model=AnalysisResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Submit project codebase for analysis",
+    description="Submits the repository clone URL associated with the project workspace to the Analysis Engine for analysis.",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Analysis request accepted by the Analysis Engine."
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Project has no repository configured or repository URL is invalid."
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Missing or invalid access token credentials."
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Project not found."
+        },
+        status.HTTP_503_SERVICE_UNAVAILABLE: {
+            "description": "Analysis Engine is currently unreachable."
+        },
+        status.HTTP_504_GATEWAY_TIMEOUT: {
+            "description": "Request to the Analysis Engine timed out."
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "description": "An unexpected error occurred during processing."
+        },
+    },
+)
+async def analyze_project(
+    project_id: uuid.UUID,
+    x_request_id: str | None = Header(default=None, alias="X-Request-ID"),
+    current_user_id: uuid.UUID = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    HTTP endpoint to trigger codebase analysis of a specific project workspace.
+    """
+    from app.services.analysis import AnalysisService
+    analysis_service = AnalysisService(db)
+    try:
+        response = await analysis_service.submit_project_analysis(
+            project_id=project_id,
+            requesting_user_id=current_user_id,
+            request_id=x_request_id,
+        )
+        return response
+    except ProjectNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e) or "Project not found",
+        )
+    except ProjectForbiddenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e) or "Forbidden",
+        )
+
+
 
