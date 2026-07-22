@@ -22,6 +22,9 @@ from app.parser.parser import (
 from app.parser.registry import ParserRegistry
 from app.parser.repository_parser import RepositoryParser
 from app.parser.base import SourceCodeParser
+from app.parser.python_parser import PythonParser
+from app.parser.javascript_parser import JavaScriptParser
+from app.parser.typescript_parser import TypeScriptParser
 
 __all__ = [
     # Canonical Language Enum
@@ -41,6 +44,9 @@ __all__ = [
     "create_treesitter_parser",
     "get_treesitter_language",
     "SourceCodeParser",
+    "PythonParser",
+    "JavaScriptParser",
+    "TypeScriptParser",
     # Registry & Repository Parser
     "ParserRegistry",
     "RepositoryParser",

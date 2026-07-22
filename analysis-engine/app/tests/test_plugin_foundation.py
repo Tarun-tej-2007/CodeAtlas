@@ -11,6 +11,8 @@ from app.plugins import (
 )
 
 
+from app.parser import SourceCodeParser
+
 class PythonPluginStub(LanguagePlugin):
     """Stub implementation of a Python LanguagePlugin."""
 
@@ -21,6 +23,9 @@ class PythonPluginStub(LanguagePlugin):
     @property
     def extensions(self) -> set[str]:
         return {".py"}
+
+    def get_parser(self) -> SourceCodeParser:
+        return None  # type: ignore
 
 
 class JavaScriptPluginStub(LanguagePlugin):
@@ -33,6 +38,10 @@ class JavaScriptPluginStub(LanguagePlugin):
     @property
     def extensions(self) -> set[str]:
         return {".js", ".jsx"}
+
+    def get_parser(self) -> SourceCodeParser:
+        return None  # type: ignore
+
 
 
 class TestPluginFoundation(unittest.TestCase):
