@@ -24,6 +24,14 @@ from app.visualization.models import (
 from app.visualization.serializer import VisualizationSerializer
 from app.visualization.styles import EdgeStyle, GroupStyle, NodeStyle
 from app.visualization.transformers import VisualizationTransformer
+from app.visualization.layouts import (
+    BaseLayoutEngine,
+    HierarchicalLayoutEngine,
+    LayoutEngineError,
+    InvalidLayoutGraph as LayoutGraphInvalidError, # Prevent namespace collision
+    CyclicLayoutError,
+    UnsupportedLayoutError,
+)
 
 __all__ = [
     # Enums
@@ -53,4 +61,11 @@ __all__ = [
     "VisualizationTransformer",
     # Serializers
     "VisualizationSerializer",
+    # Layouts
+    "BaseLayoutEngine",
+    "HierarchicalLayoutEngine",
+    "LayoutEngineError",
+    "CyclicLayoutError",
+    "UnsupportedLayoutError",
 ]
+
