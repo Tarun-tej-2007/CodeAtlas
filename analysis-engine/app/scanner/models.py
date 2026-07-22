@@ -50,3 +50,23 @@ class ScanResult(BaseModel):
     files: list[FileMetadata] = Field(default_factory=list, description="List of scanned source file metadata.")
     directories: list[DirectoryMetadata] = Field(default_factory=list, description="List of processed directory metadata.")
     statistics: ScanStatistics = Field(default_factory=ScanStatistics, description="Summary statistics of the scan operation.")
+
+
+class DiscoveredFile(BaseModel):
+    """Represents metadata for a discovered file in the repository."""
+
+    absolute_path: Path = Field(..., description="Absolute path to the discovered file.")
+    relative_path: Path = Field(..., description="Relative path relative to repository root.")
+    extension: str = Field(..., description="File extension including leading dot.")
+    size: int = Field(..., ge=0, description="File size in bytes.")
+
+    model_config = ConfigDict(frozen=True)
+
+
+class DiscoveryResult(BaseModel):
+    """Represents the collection of all discovered files in the workspace."""
+
+    files: list[DiscoveredFile] = Field(default_factory=list, description="List of recursively discovered files.")
+
+    model_config = ConfigDict(frozen=True)
+
