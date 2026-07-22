@@ -10,6 +10,9 @@ from app.plugins.exceptions import (
     DuplicatePluginError,
     PluginNotFoundError,
 )
+from app.plugins.python_plugin import PythonPlugin
+from app.plugins.javascript_plugin import JavaScriptPlugin
+from app.plugins.typescript_plugin import TypeScriptPlugin
 
 __all__ = [
     "LanguagePlugin",
@@ -17,4 +20,7 @@ __all__ = [
     "PluginError",
     "DuplicatePluginError",
     "PluginNotFoundError",
+    "PythonPlugin",
+    "JavaScriptPlugin",
+    "TypeScriptPlugin",
 ]
