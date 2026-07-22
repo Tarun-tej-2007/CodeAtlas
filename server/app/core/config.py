@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     # Cache Configuration
     REDIS_URL: str = "redis://redis:6379/0"
 
+    # Analysis Engine Configuration
+    ANALYSIS_ENGINE_URL: str = "http://analysis-engine:8001"
+    ANALYSIS_ENGINE_TIMEOUT: float = 10.0
+
     # Security Configuration
     # SECRET_KEY is required for cryptographic token signing.
     # The application will fail to start if it is missing from the environment/env file.
