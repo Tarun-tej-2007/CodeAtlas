@@ -32,6 +32,14 @@ from app.visualization.layouts import (
     CyclicLayoutError,
     UnsupportedLayoutError,
 )
+from app.visualization.pipeline import (
+    VisualizationPipeline,
+    VisualizationPipelineConfig,
+    VisualizationPipelineError,
+    TransformationStageError,
+    LayoutStageError,
+    SerializationStageError,
+)
 
 __all__ = [
     # Enums
@@ -67,5 +75,13 @@ __all__ = [
     "LayoutEngineError",
     "CyclicLayoutError",
     "UnsupportedLayoutError",
+    # Pipeline
+    "VisualizationPipeline",
+    "VisualizationPipelineConfig",
+    "VisualizationPipelineError",
+    "TransformationStageError",
+    "LayoutStageError",
+    "SerializationStageError",
 ]
+
 
