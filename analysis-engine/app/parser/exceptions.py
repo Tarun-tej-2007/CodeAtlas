@@ -26,3 +26,10 @@ class ParseFailureError(ParserError):
     """Raised when parsing a source file fails due to I/O or syntax errors."""
 
     pass
+
+
+class ParseError(ParserError):
+    """Raised when parsing source code fails due to syntax or structural errors."""
+
+    pass
+
