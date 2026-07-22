@@ -24,6 +24,8 @@ from app.semantic.models import (
     SemanticResult,
 )
 from app.semantic.analyzer import SemanticAnalyzer
+from app.semantic.scope import ScopeNode
+from app.semantic.scope_manager import ScopeManager
 
 __all__ = [
     # Enums
@@ -44,4 +46,7 @@ __all__ = [
     "SemanticResult",
     # Interfaces
     "SemanticAnalyzer",
+    # Scope resolution classes
+    "ScopeNode",
+    "ScopeManager",
 ]
