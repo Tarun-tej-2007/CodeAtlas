@@ -32,3 +32,28 @@ class FileAccessError(ScannerError):
     """Raised when file permissions or I/O errors prevent file inspection."""
 
     pass
+
+
+class FileDiscoveryError(Exception):
+    """Base exception class for all file discovery errors."""
+
+    pass
+
+
+class DiscoveryRootNotFoundError(FileDiscoveryError):
+    """Raised when the specified repository root directory does not exist on disk."""
+
+    pass
+
+
+class InvalidDiscoveryRootError(FileDiscoveryError):
+    """Raised when a repository path is invalid, inaccessible, or not a directory."""
+
+    pass
+
+
+class DiscoveryFailureError(FileDiscoveryError):
+    """Raised when recursive file traversal encounters filesystem failures."""
+
+    pass
+
