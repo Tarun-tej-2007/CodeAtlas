@@ -26,6 +26,7 @@ from app.semantic.models import (
 from app.semantic.analyzer import SemanticAnalyzer
 from app.semantic.scope import ScopeNode
 from app.semantic.scope_manager import ScopeManager
+from app.semantic.symbol_table import SymbolTable
 
 __all__ = [
     # Enums
@@ -49,4 +50,6 @@ __all__ = [
     # Scope resolution classes
     "ScopeNode",
     "ScopeManager",
+    # Symbol table engine
+    "SymbolTable",
 ]
