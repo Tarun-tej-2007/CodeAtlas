@@ -19,6 +19,25 @@ class Language(str, Enum):
     TYPESCRIPT = "typescript"
 
 
+class DiscoveredFile(BaseModel):
+    """Represents metadata for a discovered file in the repository."""
+
+    absolute_path: Path = Field(..., description="Absolute path to the discovered file.")
+    relative_path: Path = Field(..., description="Relative path relative to repository root.")
+    extension: str = Field(..., description="File extension including leading dot.")
+    size: int = Field(..., ge=0, description="File size in bytes.")
+    language: Language = Field(default=Language.UNKNOWN, description="Detected programming language.")
+
+    model_config = ConfigDict(frozen=True)
+
+
+class DiscoveryResult(BaseModel):
+    """Represents the collection of all discovered files in the workspace."""
+
+    files: list[DiscoveredFile] = Field(default_factory=list, description="List of recursively discovered files.")
+
+    model_config = ConfigDict(frozen=True)
+
 
 class FileMetadata(BaseModel):
     """Represents metadata for an individual file within a scanned repository."""
@@ -57,28 +76,18 @@ class ScanStatistics(BaseModel):
 class ScanResult(BaseModel):
     """Represents the complete result of a repository scan operation."""
 
-    repository_root: Path = Field(..., description="Root directory path of the scanned repository.")
+    # Legacy fields (retained for backward compatibility)
+    repository_root: Path | None = Field(default=None, description="Root directory path of the scanned repository.")
     files: list[FileMetadata] = Field(default_factory=list, description="List of scanned source file metadata.")
     directories: list[DirectoryMetadata] = Field(default_factory=list, description="List of processed directory metadata.")
     statistics: ScanStatistics = Field(default_factory=ScanStatistics, description="Summary statistics of the scan operation.")
 
-
-class DiscoveredFile(BaseModel):
-    """Represents metadata for a discovered file in the repository."""
-
-    absolute_path: Path = Field(..., description="Absolute path to the discovered file.")
-    relative_path: Path = Field(..., description="Relative path relative to repository root.")
-    extension: str = Field(..., description="File extension including leading dot.")
-    size: int = Field(..., ge=0, description="File size in bytes.")
-    language: Language = Field(default=Language.UNKNOWN, description="Detected programming language.")
+    # New pipeline scan fields
+    discovery_result: DiscoveryResult | None = Field(default=None, description="The result of the file discovery process.")
+    total_files: int = Field(default=0, ge=0, description="Total number of discovered files.")
+    supported_files: int = Field(default=0, ge=0, description="Number of files matching supported languages.")
+    unsupported_files: int = Field(default=0, ge=0, description="Number of files with unknown/unsupported languages.")
+    languages: dict[Language, int] = Field(default_factory=dict, description="Counts of files grouped by language.")
+    scan_duration: float = Field(default=0.0, ge=0.0, description="Scan execution duration in seconds.")
 
     model_config = ConfigDict(frozen=True)
-
-
-class DiscoveryResult(BaseModel):
-    """Represents the collection of all discovered files in the workspace."""
-
-    files: list[DiscoveredFile] = Field(default_factory=list, description="List of recursively discovered files.")
-
-    model_config = ConfigDict(frozen=True)
-

@@ -36,6 +36,7 @@ from app.scanner.metadata import FileMetadataExtractor
 from app.scanner.scanner import Scanner
 from app.scanner.discovery import FileDiscoveryService
 from app.scanner.language_detector import LanguageDetector
+from app.scanner.pipeline import ScannerPipeline
 
 __all__ = [
     # Config & Pipeline Engine
@@ -69,6 +70,7 @@ __all__ = [
     # Service
     "FileDiscoveryService",
     "LanguageDetector",
+    "ScannerPipeline",
 ]
 
 
