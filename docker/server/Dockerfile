@@ -20,6 +20,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy source code with non-root user permissions
 COPY --chown=appuser:appgroup server/ .
 
+# Make startup script executable
+RUN chmod +x start.sh
+
 # Switch to the non-root user
 USER appuser
 
@@ -27,4 +30,4 @@ USER appuser
 EXPOSE 8000
 
 # Default production command
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./start.sh"]
