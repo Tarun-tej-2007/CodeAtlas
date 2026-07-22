@@ -6,4 +6,4 @@ api_router = APIRouter()
 api_router.include_router(
     health.router,
     tags=["Health"]
-)
+)
