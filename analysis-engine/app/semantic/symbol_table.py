@@ -110,6 +110,21 @@ class SymbolTable:
         """
         return self._symbols.get(symbol_id)
 
+    def get_symbol_by_name_in_scope(self, scope_id: Optional[str], name: str) -> Optional[SemanticSymbol]:
+        """Retrieves a symbol by its name within a specific scope.
+
+        Args:
+            scope_id: Lexical scope identifier.
+            name: Name identifier of the symbol.
+
+        Returns:
+            The SemanticSymbol instance, or None.
+        """
+        symbol_id = self._scope_name_index.get((scope_id, name))
+        if symbol_id:
+            return self.get_symbol(symbol_id)
+        return None
+
     def get_symbol_by_qualified_name(self, qualified_name: str) -> Optional[SemanticSymbol]:
         """Retrieves a symbol by its qualified name.
 

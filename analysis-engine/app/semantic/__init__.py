@@ -27,6 +27,7 @@ from app.semantic.analyzer import SemanticAnalyzer
 from app.semantic.scope import ScopeNode
 from app.semantic.scope_manager import ScopeManager
 from app.semantic.symbol_table import SymbolTable
+from app.semantic.reference_resolver import ReferenceResolver
 
 __all__ = [
     # Enums
@@ -52,4 +53,6 @@ __all__ = [
     "ScopeManager",
     # Symbol table engine
     "SymbolTable",
+    # Reference resolution engine
+    "ReferenceResolver",
 ]
