@@ -39,6 +39,11 @@ from app.semantic.type_metadata import (
     PropertySignature,
     TypeMetadataExtractor,
 )
+from app.semantic.pipeline import (
+    SemanticAnalysisContext,
+    SemanticAnalysisPlugin,
+    SemanticPipeline,
+)
 
 __all__ = [
     # Enums
@@ -76,4 +81,8 @@ __all__ = [
     "MethodSignature",
     "PropertySignature",
     "TypeMetadataExtractor",
+    # Pipeline coordination
+    "SemanticAnalysisContext",
+    "SemanticAnalysisPlugin",
+    "SemanticPipeline",
 ]
