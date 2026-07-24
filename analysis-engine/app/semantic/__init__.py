@@ -28,6 +28,17 @@ from app.semantic.scope import ScopeNode
 from app.semantic.scope_manager import ScopeManager
 from app.semantic.symbol_table import SymbolTable
 from app.semantic.reference_resolver import ReferenceResolver
+from app.semantic.type_metadata import (
+    TypeReference,
+    TypeParameter,
+    InheritanceInfo,
+    DecoratorInfo,
+    ModifierInfo,
+    ParameterInfo,
+    MethodSignature,
+    PropertySignature,
+    TypeMetadataExtractor,
+)
 
 __all__ = [
     # Enums
@@ -55,4 +66,14 @@ __all__ = [
     "SymbolTable",
     # Reference resolution engine
     "ReferenceResolver",
+    # Type metadata models & service
+    "TypeReference",
+    "TypeParameter",
+    "InheritanceInfo",
+    "DecoratorInfo",
+    "ModifierInfo",
+    "ParameterInfo",
+    "MethodSignature",
+    "PropertySignature",
+    "TypeMetadataExtractor",
 ]
