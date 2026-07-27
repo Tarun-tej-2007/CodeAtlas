@@ -31,6 +31,7 @@ class ProjectSymbolIndex:
 
     def _build_index(self, files: Dict[Path, ProjectFile]) -> None:
         """Helper to index all symbols, check for duplicates, and validate consistency."""
+        seen_exported_ids = set()
         for file_path, project_file in files.items():
             symbols_map = {sym.id: sym for sym in project_file.symbols}
 
@@ -45,7 +46,8 @@ class ProjectSymbolIndex:
                         self._diagnostics.append(msg)
                     else:
                         exported_symbol = symbols_map[export.local_symbol_id]
-                        if exported_symbol not in self._exported_symbols:
+                        if exported_symbol.id not in seen_exported_ids:
+                            seen_exported_ids.add(exported_symbol.id)
                             self._exported_symbols.append(exported_symbol)
 
             # 2. Index all file symbols
@@ -93,7 +95,7 @@ class ProjectSymbolIndex:
         Returns:
             A list of matching ProjectSymbol instances.
         """
-        return list(self._by_name.get(name, []))
+        return self._by_name.get(name, [])
 
     def get_symbol_by_qualified_name(self, qualified_name: str) -> Optional[ProjectSymbol]:
         """Looks up a project symbol by its fully qualified name.
@@ -115,7 +117,7 @@ class ProjectSymbolIndex:
         Returns:
             A list of ProjectSymbol instances.
         """
-        return list(self._by_file.get(file_path, []))
+        return self._by_file.get(file_path, [])
 
     def get_exported_symbols(self) -> List[ProjectSymbol]:
         """Retrieves all explicitly exported symbols across the project.
@@ -123,7 +125,7 @@ class ProjectSymbolIndex:
         Returns:
             A list of exported ProjectSymbol instances.
         """
-        return list(self._exported_symbols)
+        return self._exported_symbols
 
     def has_symbol(self, symbol_id: str) -> bool:
         """Checks if a symbol is registered in the index.
@@ -143,4 +145,4 @@ class ProjectSymbolIndex:
         Returns:
             List of diagnostic warning strings.
         """
-        return list(self._diagnostics)
+        return self._diagnostics

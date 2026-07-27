@@ -11,6 +11,7 @@ from app.semantic.project_models import (
     ProjectFile,
     ProjectSymbol,
 )
+from app.semantic.cache import PathResolutionCache
 
 
 class ResolvedImport(BaseModel):
@@ -39,67 +40,69 @@ class ImportExportResolver:
     def __init__(self) -> None:
         pass
 
-    def resolve_specifier_to_path(self, importing_file: Path, specifier: str, known_paths: Set[Path]) -> Optional[Path]:
+    def resolve_specifier_to_path(
+        self,
+        importing_file: Path,
+        specifier: str,
+        abs_known_map: Dict[Path, Path],
+        cache: Optional[PathResolutionCache] = None,
+    ) -> Optional[Path]:
         """Resolves a module specifier path relative to the importing file against known paths.
 
         Args:
             importing_file: The path of the file containing the import.
             specifier: The import specifier string (e.g. './utils').
-            known_paths: Set of all known file paths in the project.
+            abs_known_map: Pre-resolved mapping of absolute file paths to original Paths.
+            cache: Optional thread-safe PathResolutionCache.
 
         Returns:
             The resolved target file Path, or None if it cannot be resolved.
         """
-        # 1. Resolve all known paths to absolute forms in a map
-        abs_known_map: Dict[Path, Path] = {}
-        for kp in known_paths:
-            try:
-                abs_known_map[kp.resolve()] = kp
-            except Exception:
-                try:
-                    abs_known_map[kp.absolute()] = kp
-                except Exception:
-                    abs_known_map[kp] = kp
+        # 1. Check in-memory cache first
+        if cache:
+            cached_path = cache.get(importing_file, specifier)
+            if cached_path is not None:
+                return cached_path
 
-        # 2. Compute absolute path of normalized resolved path
+        # 2. Compute absolute path of normalized resolved path using pure string manipulations
         if specifier.startswith('.'):
             base_dir = importing_file.parent
             normalized_raw = base_dir / specifier
-            try:
-                abs_resolved = normalized_raw.resolve()
-            except Exception:
-                try:
-                    abs_resolved = normalized_raw.absolute()
-                except Exception:
-                    abs_resolved = normalized_raw
         else:
             normalized_raw = Path(specifier)
-            try:
-                abs_resolved = normalized_raw.resolve()
-            except Exception:
-                try:
-                    abs_resolved = normalized_raw.absolute()
-                except Exception:
-                    abs_resolved = normalized_raw
 
-        # 3. Check direct match
+        try:
+            abs_resolved = Path(os.path.normpath(os.path.abspath(normalized_raw)))
+        except Exception:
+            abs_resolved = normalized_raw
+
+        resolved_path = None
+        # 3. Check direct match in absolute map
         if abs_resolved in abs_known_map:
-            return abs_known_map[abs_resolved]
+            resolved_path = abs_known_map[abs_resolved]
+        else:
+            # 4. Check matches stripping suffix extensions
+            for abs_known, original in abs_known_map.items():
+                if abs_known.with_suffix('') == abs_resolved:
+                    resolved_path = original
+                    break
+                if abs_known.with_suffix('') == abs_resolved.with_suffix(''):
+                    resolved_path = original
+                    break
 
-        # 4. Check matches stripping suffix extensions
-        for abs_known, original in abs_known_map.items():
-            if abs_known.with_suffix('') == abs_resolved:
-                return original
-            if abs_known.with_suffix('') == abs_resolved.with_suffix(''):
-                return original
+        if cache:
+            cache.set(importing_file, specifier, resolved_path)
 
-        return None
+        return resolved_path
 
-    def resolve_project_imports(self, files: Dict[Path, ProjectFile]) -> ImportExportResolutionResult:
+    def resolve_project_imports(
+        self, files: Dict[Path, ProjectFile], cache: Optional[PathResolutionCache] = None
+    ) -> ImportExportResolutionResult:
         """Resolves explicit imports to explicit exports across all project files.
 
         Args:
             files: Dictionary mapping file paths to their ProjectFile declarations.
+            cache: Optional thread-safe PathResolutionCache.
 
         Returns:
             An ImportExportResolutionResult containing resolved links and diagnostics.
@@ -109,7 +112,16 @@ class ImportExportResolver:
         unresolved_imports: List[ImportDeclaration] = []
         diagnostics: List[str] = []
 
-        # 1. Index all explicit exports: (target_file_path, exported_name) -> ProjectSymbol
+        # 1. Resolve all known paths to absolute forms ONCE to avoid repeated O(F) sweeps (pure string mapping)
+        abs_known_map: Dict[Path, Path] = {}
+        for kp in known_paths:
+            try:
+                abs_str = os.path.normpath(os.path.abspath(kp))
+                abs_known_map[Path(abs_str)] = kp
+            except Exception:
+                abs_known_map[kp] = kp
+
+        # 2. Index all explicit exports: (target_file_path, exported_name) -> ProjectSymbol
         exports_index: Dict[Tuple[Path, str], ProjectSymbol] = {}
         duplicate_exports: Set[Tuple[Path, str]] = set()
 
@@ -117,7 +129,7 @@ class ImportExportResolver:
             symbols_map = {sym.id: sym for sym in project_file.symbols}
             for export in project_file.exports:
                 export_key = (file_path, export.exported_name)
-                
+
                 # Check for duplicate exports in the same file
                 if export_key in exports_index:
                     duplicate_exports.add(export_key)
@@ -129,10 +141,12 @@ class ImportExportResolver:
                 if export.local_symbol_id and export.local_symbol_id in symbols_map:
                     exports_index[export_key] = symbols_map[export.local_symbol_id]
 
-        # 2. Resolve each import declaration
+        # 3. Resolve each import declaration
         for file_path, project_file in files.items():
             for imp in project_file.imports:
-                target_file_path = self.resolve_specifier_to_path(file_path, imp.module_specifier, known_paths)
+                target_file_path = self.resolve_specifier_to_path(
+                    file_path, imp.module_specifier, abs_known_map, cache
+                )
 
                 if not target_file_path:
                     # Unresolved module specifier
@@ -158,7 +172,7 @@ class ImportExportResolver:
                         ResolvedImport(
                             import_declaration=imp,
                             target_file=target_file_path,
-                            target_symbol=resolved_symbol
+                            target_symbol=resolved_symbol,
                         )
                     )
                 else:
@@ -171,5 +185,6 @@ class ImportExportResolver:
         return ImportExportResolutionResult(
             resolved_imports=resolved_imports,
             unresolved_imports=unresolved_imports,
-            diagnostics=diagnostics
+            diagnostics=diagnostics,
         )
+

@@ -16,6 +16,7 @@ from app.semantic.project_models import (
     SymbolReference,
     ProjectFile,
 )
+from app.semantic.cache import PathResolutionCache
 
 logger = logging.getLogger("analysis-engine")
 
@@ -189,11 +190,14 @@ class CrossFileReferenceResolver:
         self.index = index
         self.import_resolver = import_resolver
 
-    def resolve_project_references(self, files: Dict[Path, ProjectFile]) -> ReferenceResolutionResult:
+    def resolve_project_references(
+        self, files: Dict[Path, ProjectFile], cache: Optional[PathResolutionCache] = None
+    ) -> ReferenceResolutionResult:
         """Resolves all identifier references across the project.
 
         Args:
             files: Dict mapping project file paths to their ProjectFile declarations.
+            cache: Optional thread-safe PathResolutionCache.
 
         Returns:
             A ReferenceResolutionResult containing resolved links and diagnostics.
@@ -203,7 +207,7 @@ class CrossFileReferenceResolver:
         diagnostics: List[str] = []
 
         # 1. Resolve project-wide imports
-        imports_result = self.import_resolver.resolve_project_imports(files)
+        imports_result = self.import_resolver.resolve_project_imports(files, cache)
         diagnostics.extend(imports_result.diagnostics)
 
         # Map: (importing_file_path, local_alias_or_name) -> target ProjectSymbol
@@ -214,8 +218,19 @@ class CrossFileReferenceResolver:
             local_name = imp_decl.local_alias if imp_decl.local_alias else imp_decl.imported_name
             resolved_imports_map[(file_path, local_name)] = resolved_imp.target_symbol
 
+        # Pre-index local symbols by simple name for O(1) lookups instead of O(S) scans
+        local_symbols_by_name: Dict[Path, Dict[str, List[ProjectSymbol]]] = {}
+        for file_path, project_file in files.items():
+            file_symbol_map: Dict[str, List[ProjectSymbol]] = {}
+            for sym in project_file.symbols:
+                if sym.name not in file_symbol_map:
+                    file_symbol_map[sym.name] = []
+                file_symbol_map[sym.name].append(sym)
+            local_symbols_by_name[file_path] = file_symbol_map
+
         # 2. Iterate through each file and resolve references
         for file_path, project_file in files.items():
+            file_symbol_map = local_symbols_by_name.get(file_path, {})
             for ref in project_file.references:
                 # Check resolved imports first
                 import_key = (file_path, ref.name)
@@ -226,7 +241,7 @@ class CrossFileReferenceResolver:
                     continue
 
                 # Check local symbols in the same file
-                local_matches = [sym for sym in project_file.symbols if sym.name == ref.name]
+                local_matches = file_symbol_map.get(ref.name, [])
                 if len(local_matches) == 1:
                     resolved_references.append(
                         ResolvedReference(reference=ref, target_symbol=local_matches[0])
@@ -249,4 +264,5 @@ class CrossFileReferenceResolver:
             unresolved_references=unresolved_references,
             diagnostics=diagnostics,
         )
+
 
