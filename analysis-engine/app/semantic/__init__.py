@@ -53,6 +53,11 @@ from app.semantic.project_models import (
     ProjectSemanticResult,
 )
 from app.semantic.project_analyzer import ProjectSemanticAnalyzer
+from app.semantic.import_export_resolver import (
+    ResolvedImport,
+    ImportExportResolutionResult,
+    ImportExportResolver,
+)
 
 __all__ = [
     # Enums
@@ -103,4 +108,8 @@ __all__ = [
     "ProjectSemanticResult",
     # Project analyzer interface
     "ProjectSemanticAnalyzer",
+    # Import/Export Resolver Engine
+    "ResolvedImport",
+    "ImportExportResolutionResult",
+    "ImportExportResolver",
 ]
