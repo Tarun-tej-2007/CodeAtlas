@@ -44,6 +44,20 @@ from app.semantic.pipeline import (
     SemanticAnalysisPlugin,
     SemanticPipeline,
 )
+from app.semantic.project_models import (
+    SymbolLocation,
+    ProjectSymbol,
+    ImportDeclaration,
+    ExportDeclaration,
+    ProjectFile,
+    ProjectSemanticResult,
+)
+from app.semantic.project_analyzer import ProjectSemanticAnalyzer
+from app.semantic.import_export_resolver import (
+    ResolvedImport,
+    ImportExportResolutionResult,
+    ImportExportResolver,
+)
 
 __all__ = [
     # Enums
@@ -85,4 +99,17 @@ __all__ = [
     "SemanticAnalysisContext",
     "SemanticAnalysisPlugin",
     "SemanticPipeline",
+    # Project-level semantic models
+    "SymbolLocation",
+    "ProjectSymbol",
+    "ImportDeclaration",
+    "ExportDeclaration",
+    "ProjectFile",
+    "ProjectSemanticResult",
+    # Project analyzer interface
+    "ProjectSemanticAnalyzer",
+    # Import/Export Resolver Engine
+    "ResolvedImport",
+    "ImportExportResolutionResult",
+    "ImportExportResolver",
 ]
