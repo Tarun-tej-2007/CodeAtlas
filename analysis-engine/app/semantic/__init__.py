@@ -58,6 +58,7 @@ from app.semantic.import_export_resolver import (
     ImportExportResolutionResult,
     ImportExportResolver,
 )
+from app.semantic.project_symbol_index import ProjectSymbolIndex
 
 __all__ = [
     # Enums
@@ -112,4 +113,6 @@ __all__ = [
     "ResolvedImport",
     "ImportExportResolutionResult",
     "ImportExportResolver",
+    # Project Symbol Index
+    "ProjectSymbolIndex",
 ]
