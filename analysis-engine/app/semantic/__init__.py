@@ -65,6 +65,10 @@ from app.semantic.reference_resolver import (
     ReferenceResolutionResult,
     CrossFileReferenceResolver,
 )
+from app.semantic.linking_pipeline import (
+    LinkedSemanticResult,
+    SemanticLinkingPipeline,
+)
 
 __all__ = [
     # Enums
@@ -126,4 +130,7 @@ __all__ = [
     "ResolvedReference",
     "ReferenceResolutionResult",
     "CrossFileReferenceResolver",
+    # Semantic Linking Pipeline
+    "LinkedSemanticResult",
+    "SemanticLinkingPipeline",
 ]
