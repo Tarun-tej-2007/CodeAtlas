@@ -1,12 +1,21 @@
 """Reference Resolution Engine module."""
 
 import logging
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.semantic.enums import ReferenceKind
 from app.semantic.models import Location, SemanticReference, SemanticSymbol
 from app.semantic.scope_manager import ScopeManager
 from app.semantic.symbol_table import SymbolTable
+from app.semantic.project_symbol_index import ProjectSymbolIndex
+from app.semantic.import_export_resolver import ImportExportResolver
+from app.semantic.project_models import (
+    ProjectSymbol,
+    SymbolReference,
+    ProjectFile,
+)
 
 logger = logging.getLogger("analysis-engine")
 
@@ -140,3 +149,104 @@ class ReferenceResolver:
         self._resolved_references.clear()
         self._unresolved_references.clear()
         self._diagnostics.clear()
+
+
+class ResolvedReference(BaseModel):
+    """Represents a resolved identifier reference mapping to its target ProjectSymbol."""
+
+    reference: SymbolReference = Field(..., description="The source symbol reference.")
+    target_symbol: ProjectSymbol = Field(..., description="The resolved symbol definition.")
+
+    model_config = ConfigDict(frozen=True)
+
+
+class ReferenceResolutionResult(BaseModel):
+    """Contains the results and diagnostics of a cross-file reference resolution run."""
+
+    resolved_references: List[ResolvedReference] = Field(
+        default_factory=list, description="All successfully resolved references."
+    )
+    unresolved_references: List[SymbolReference] = Field(
+        default_factory=list, description="All unresolved references."
+    )
+    diagnostics: List[str] = Field(
+        default_factory=list, description="Resolution warnings and diagnostics."
+    )
+
+    model_config = ConfigDict(frozen=True)
+
+
+class CrossFileReferenceResolver:
+    """Resolves identifier reference usages to declared symbols across multiple project files."""
+
+    def __init__(self, index: ProjectSymbolIndex, import_resolver: ImportExportResolver) -> None:
+        """Initializes the CrossFileReferenceResolver with index and import resolver dependencies.
+
+        Args:
+            index: Read-only ProjectSymbolIndex.
+            import_resolver: Reusable ImportExportResolver.
+        """
+        self.index = index
+        self.import_resolver = import_resolver
+
+    def resolve_project_references(self, files: Dict[Path, ProjectFile]) -> ReferenceResolutionResult:
+        """Resolves all identifier references across the project.
+
+        Args:
+            files: Dict mapping project file paths to their ProjectFile declarations.
+
+        Returns:
+            A ReferenceResolutionResult containing resolved links and diagnostics.
+        """
+        resolved_references: List[ResolvedReference] = []
+        unresolved_references: List[SymbolReference] = []
+        diagnostics: List[str] = []
+
+        # 1. Resolve project-wide imports
+        imports_result = self.import_resolver.resolve_project_imports(files)
+        diagnostics.extend(imports_result.diagnostics)
+
+        # Map: (importing_file_path, local_alias_or_name) -> target ProjectSymbol
+        resolved_imports_map: Dict[Tuple[Path, str], ProjectSymbol] = {}
+        for resolved_imp in imports_result.resolved_imports:
+            imp_decl = resolved_imp.import_declaration
+            file_path = imp_decl.location.file_path
+            local_name = imp_decl.local_alias if imp_decl.local_alias else imp_decl.imported_name
+            resolved_imports_map[(file_path, local_name)] = resolved_imp.target_symbol
+
+        # 2. Iterate through each file and resolve references
+        for file_path, project_file in files.items():
+            for ref in project_file.references:
+                # Check resolved imports first
+                import_key = (file_path, ref.name)
+                if import_key in resolved_imports_map:
+                    resolved_references.append(
+                        ResolvedReference(reference=ref, target_symbol=resolved_imports_map[import_key])
+                    )
+                    continue
+
+                # Check local symbols in the same file
+                local_matches = [sym for sym in project_file.symbols if sym.name == ref.name]
+                if len(local_matches) == 1:
+                    resolved_references.append(
+                        ResolvedReference(reference=ref, target_symbol=local_matches[0])
+                    )
+                elif len(local_matches) > 1:
+                    # Ambiguous local reference
+                    unresolved_references.append(ref)
+                    diagnostics.append(
+                        f"Ambiguous local reference to name '{ref.name}' in file {file_path} (multiple declarations found)."
+                    )
+                else:
+                    # Unresolved reference
+                    unresolved_references.append(ref)
+                    diagnostics.append(
+                        f"Unresolved reference to name '{ref.name}' in file {file_path}."
+                    )
+
+        return ReferenceResolutionResult(
+            resolved_references=resolved_references,
+            unresolved_references=unresolved_references,
+            diagnostics=diagnostics,
+        )
+

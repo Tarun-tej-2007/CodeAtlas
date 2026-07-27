@@ -27,7 +27,6 @@ from app.semantic.analyzer import SemanticAnalyzer
 from app.semantic.scope import ScopeNode
 from app.semantic.scope_manager import ScopeManager
 from app.semantic.symbol_table import SymbolTable
-from app.semantic.reference_resolver import ReferenceResolver
 from app.semantic.type_metadata import (
     TypeReference,
     TypeParameter,
@@ -49,6 +48,7 @@ from app.semantic.project_models import (
     ProjectSymbol,
     ImportDeclaration,
     ExportDeclaration,
+    SymbolReference,
     ProjectFile,
     ProjectSemanticResult,
 )
@@ -59,6 +59,12 @@ from app.semantic.import_export_resolver import (
     ImportExportResolver,
 )
 from app.semantic.project_symbol_index import ProjectSymbolIndex
+from app.semantic.reference_resolver import (
+    ReferenceResolver,
+    ResolvedReference,
+    ReferenceResolutionResult,
+    CrossFileReferenceResolver,
+)
 
 __all__ = [
     # Enums
@@ -105,6 +111,7 @@ __all__ = [
     "ProjectSymbol",
     "ImportDeclaration",
     "ExportDeclaration",
+    "SymbolReference",
     "ProjectFile",
     "ProjectSemanticResult",
     # Project analyzer interface
@@ -115,4 +122,8 @@ __all__ = [
     "ImportExportResolver",
     # Project Symbol Index
     "ProjectSymbolIndex",
+    # Cross-file Reference Resolution Engine
+    "ResolvedReference",
+    "ReferenceResolutionResult",
+    "CrossFileReferenceResolver",
 ]

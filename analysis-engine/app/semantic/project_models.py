@@ -55,6 +55,15 @@ class ExportDeclaration(BaseModel):
     model_config = ConfigDict(frozen=True)
 
 
+class SymbolReference(BaseModel):
+    """Represents an identifier usage reference in a project source file."""
+
+    name: str = Field(..., description="The identifier name being referenced.")
+    location: SymbolLocation = Field(..., description="Coordinate location of the reference usage.")
+
+    model_config = ConfigDict(frozen=True)
+
+
 class ProjectFile(BaseModel):
     """Represents the compiled semantic declarations and imports for a single file."""
 
@@ -62,6 +71,7 @@ class ProjectFile(BaseModel):
     symbols: List[ProjectSymbol] = Field(default_factory=list, description="All declared symbols in the file.")
     imports: List[ImportDeclaration] = Field(default_factory=list, description="All import statements in the file.")
     exports: List[ExportDeclaration] = Field(default_factory=list, description="All export statements in the file.")
+    references: List[SymbolReference] = Field(default_factory=list, description="All identifier references inside the file.")
 
     model_config = ConfigDict(frozen=True)
 
