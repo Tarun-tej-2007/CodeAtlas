@@ -13,6 +13,7 @@ from app.semantic.reference_resolver import (
     ReferenceResolutionResult,
     CrossFileReferenceResolver,
 )
+from app.semantic.cache import PathResolutionCache
 
 
 class LinkedSemanticResult(BaseModel):
@@ -74,15 +75,18 @@ class SemanticLinkingPipeline:
         Returns:
             LinkedSemanticResult container mapping cross-file references and index lookups.
         """
+        # Create execution-scoped cache for path normalizations
+        cache = PathResolutionCache()
+
         # 1. Construct index
         symbol_index = ProjectSymbolIndex(project_result.files)
 
-        # 2. Run Import/Export Resolver
-        import_export_res = self._import_resolver.resolve_project_imports(project_result.files)
+        # 2. Run Import/Export Resolver with cache
+        import_export_res = self._import_resolver.resolve_project_imports(project_result.files, cache)
 
-        # 3. Run Reference Resolver
+        # 3. Run Reference Resolver with cache
         ref_resolver = self._reference_resolver_factory(symbol_index, self._import_resolver)
-        ref_res = ref_resolver.resolve_project_references(project_result.files)
+        ref_res = ref_resolver.resolve_project_references(project_result.files, cache)
 
         # 4. Aggregate diagnostics in a deterministic order
         diagnostics: List[str] = []

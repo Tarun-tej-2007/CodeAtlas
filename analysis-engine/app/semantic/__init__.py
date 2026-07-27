@@ -69,6 +69,7 @@ from app.semantic.linking_pipeline import (
     LinkedSemanticResult,
     SemanticLinkingPipeline,
 )
+from app.semantic.cache import PathResolutionCache
 
 __all__ = [
     # Enums
@@ -133,4 +134,6 @@ __all__ = [
     # Semantic Linking Pipeline
     "LinkedSemanticResult",
     "SemanticLinkingPipeline",
+    # Path Resolution Cache
+    "PathResolutionCache",
 ]
