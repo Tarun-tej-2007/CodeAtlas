@@ -29,6 +29,7 @@ from app.graph.diff import (
 )
 from app.graph.dependency_models import DependencyMetadata
 from app.graph.dependency_graph import DependencyGraph
+from app.graph.dependency_builder import DependencyGraphBuilder
 
 __all__ = [
     # Enums
@@ -58,4 +59,6 @@ __all__ = [
     "GraphDiff",
     "GraphDiffError",
     "InvalidGraphComparison",
+    # Dependency Graph Builder
+    "DependencyGraphBuilder",
 ]
