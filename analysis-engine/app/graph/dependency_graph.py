@@ -64,6 +64,19 @@ class DependencyGraph(BaseModel):
         object.__setattr__(self, "_outgoing", {k: tuple(v) for k, v in outgoing.items()})
         object.__setattr__(self, "_incoming", {k: tuple(v) for k, v in incoming.items()})
 
+        # Precompute sorted node ID target/source lists for O(1) traversal fetching
+        outgoing_targets = {}
+        for nid, edges_list in outgoing.items():
+            tids = {e.target_id for e in edges_list}
+            outgoing_targets[nid] = tuple(sorted(list(tids)))
+        object.__setattr__(self, "_outgoing_targets", outgoing_targets)
+
+        incoming_targets = {}
+        for nid, edges_list in incoming.items():
+            sids = {e.source_id for e in edges_list}
+            incoming_targets[nid] = tuple(sorted(list(sids)))
+        object.__setattr__(self, "_incoming_targets", incoming_targets)
+
         return self
 
     def get_node(self, node_id: str) -> Optional[GraphNode]:
@@ -114,3 +127,27 @@ class DependencyGraph(BaseModel):
         """
         incoming_map: Dict[str, Tuple[GraphEdge, ...]] = getattr(self, "_incoming", {})
         return incoming_map.get(node_id, ())
+
+    def get_outgoing_target_ids(self, node_id: str) -> Tuple[str, ...]:
+        """Exposes fast lookup of pre-sorted outgoing target node IDs.
+
+        Args:
+            node_id: Unique node identifier.
+
+        Returns:
+            Tuple of target node IDs.
+        """
+        outgoing_targets: Dict[str, Tuple[str, ...]] = getattr(self, "_outgoing_targets", {})
+        return outgoing_targets.get(node_id, ())
+
+    def get_incoming_source_ids(self, node_id: str) -> Tuple[str, ...]:
+        """Exposes fast lookup of pre-sorted incoming source node IDs.
+
+        Args:
+            node_id: Unique node identifier.
+
+        Returns:
+            Tuple of source node IDs.
+        """
+        incoming_targets: Dict[str, Tuple[str, ...]] = getattr(self, "_incoming_targets", {})
+        return incoming_targets.get(node_id, ())

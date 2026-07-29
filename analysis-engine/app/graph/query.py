@@ -34,7 +34,7 @@ class DependencyGraphQuery:
         if not graph.has_node(node_id):
             return []
 
-        target_ids = sorted(list({edge.target_id for edge in graph.get_outgoing_edges(node_id)}))
+        target_ids = graph.get_outgoing_target_ids(node_id)
         neighbours = []
         for tid in target_ids:
             node = graph.get_node(tid)
@@ -78,8 +78,8 @@ class DependencyGraphQuery:
             if current == target_id:
                 return path
 
-            # Sort targets lexicographically to ensure deterministic path selection
-            targets = sorted([edge.target_id for edge in graph.get_outgoing_edges(current)])
+            # Fetch pre-sorted targets in O(1)
+            targets = graph.get_outgoing_target_ids(current)
             for target in targets:
                 if target not in visited:
                     visited.add(target)

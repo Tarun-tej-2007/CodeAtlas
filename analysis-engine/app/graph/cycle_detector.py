@@ -42,8 +42,7 @@ class CycleDetector:
             path_set.add(u)
             path.append(u)
 
-            for edge in graph.get_outgoing_edges(u):
-                v = edge.target_id
+            for v in graph.get_outgoing_target_ids(u):
                 if v in path_set:
                     # Cycle found!
                     try:

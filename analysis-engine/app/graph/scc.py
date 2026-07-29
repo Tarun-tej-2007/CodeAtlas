@@ -47,8 +47,7 @@ class SCCEngine:
             stack.append(u)
             on_stack.add(u)
 
-            for edge in graph.get_outgoing_edges(u):
-                v = edge.target_id
+            for v in graph.get_outgoing_target_ids(u):
                 if v not in indices:
                     strongconnect(v)
                     lowlinks[u] = min(lowlinks[u], lowlinks[v])
