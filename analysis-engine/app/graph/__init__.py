@@ -31,6 +31,8 @@ from app.graph.dependency_models import DependencyMetadata
 from app.graph.dependency_graph import DependencyGraph
 from app.graph.dependency_builder import DependencyGraphBuilder
 from app.graph.call_graph_builder import CallGraphBuilder
+from app.graph.cycle_detector import CycleResult, CycleDetector
+from app.graph.scc import SCCResult, SCCEngine
 
 __all__ = [
     # Enums
@@ -44,6 +46,8 @@ __all__ = [
     "GraphMetadata",
     "DependencyMetadata",
     "DependencyGraph",
+    "CycleResult",
+    "SCCResult",
     # Exceptions
     "GraphError",
     "GraphValidationError",
@@ -63,4 +67,7 @@ __all__ = [
     # Dependency Graph Builder & Call Graph Builder
     "DependencyGraphBuilder",
     "CallGraphBuilder",
+    # Cycle Detection & SCC Engine
+    "CycleDetector",
+    "SCCEngine",
 ]
