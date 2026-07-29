@@ -1,146 +1,286 @@
-"""Unit test suite for CallGraphBuilder call graph enrichment."""
+"""Unit tests for CallGraphBuilder module."""
 
-from pathlib import Path
 import unittest
+from pathlib import Path
 
-from app.analyzer import AnalysisContext
-from app.analyzer.calls import CallAnalyzer, CallKind
-from app.analyzer.resolution import SymbolResolver
-from app.graph import (
-    EdgeType,
-    Graph,
-    NodeType,
+from app.semantic import SymbolKind
+from app.semantic.project_models import (
+    Location,
+    SymbolLocation,
+    ProjectSymbol,
+    ImportDeclaration,
+    ExportDeclaration,
+    SymbolReference,
+    ProjectFile,
+    ProjectSemanticResult,
 )
-from app.analyzer.graph import (
-    CallGraphBuilder,
-    GraphBuilderError,
-    SymbolGraphBuilder,
+from app.semantic.import_export_resolver import (
+    ResolvedImport,
+    ImportExportResolutionResult,
 )
-from app.parser import Language, ParsedFile, TreeSitterParser
-from app.parser.ast import ASTBuilder
-from app.parser.modules import ModuleAnalyzer
-from app.parser.symbols import SymbolExtractor
+from app.semantic.reference_resolver import (
+    ResolvedReference,
+    ReferenceResolutionResult,
+)
+from app.semantic.project_symbol_index import ProjectSymbolIndex
+from app.semantic.linking_pipeline import LinkedSemanticResult
+from app.graph.enums import DependencyEdgeType, DependencyNodeType
+from app.graph.dependency_models import DependencyMetadata, GraphEdge, GraphNode
+from app.graph.dependency_graph import DependencyGraph
+from app.graph.call_graph_builder import CallGraphBuilder
 
 
 class TestCallGraphBuilder(unittest.TestCase):
-    """Tests for CallGraphBuilder CALLS edge generation, caller tracking, and unresolved call filtering."""
+    """Tests behavioral call graph builder mapping execution pathways."""
 
     def setUp(self) -> None:
-        self.builder = ASTBuilder()
-        self.symbol_extractor = SymbolExtractor()
-        self.module_analyzer = ModuleAnalyzer()
-        self.resolver = SymbolResolver()
-        self.call_analyzer = CallAnalyzer()
-        self.symbol_graph_builder = SymbolGraphBuilder(project_name="CallTestProject")
-        self.call_graph_builder = CallGraphBuilder()
-        self.js_parser = TreeSitterParser(Language.JAVASCRIPT)
+        self.builder = CallGraphBuilder()
 
-    def _create_context(self, code: str, filename: str = "app.js") -> AnalysisContext:
-        file_path = Path(f"/repo/{filename}")
-        parsed = ParsedFile(
-            path=file_path,
-            relative_path=Path(filename),
-            language=Language.JAVASCRIPT,
-            source_code=code,
-            tree=self.js_parser._ts_parser.parse(code.encode("utf-8")),
-        )
-        ast_doc = self.builder.build_document(parsed)
-        symbols = self.symbol_extractor.extract(ast_doc)
-        modules = self.module_analyzer.analyze(ast_doc)
-        return AnalysisContext(
-            ast_document=ast_doc,
-            symbol_table=symbols,
-            module_metadata=modules,
+        # Coordinates
+        self.loc_file = Path("src/main.py")
+        
+        # Enclosing Function caller_func spanning lines 10 to 20
+        self.caller_func = ProjectSymbol(
+            id="sym-caller-func",
+            name="process",
+            qualified_name="src.main.process",
+            kind=SymbolKind.FUNCTION,
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=10, start_column=0, end_line=20, end_column=10)
+            )
         )
 
-    def test_function_method_constructor_static_calls(self) -> None:
-        code = """
-        function calculate() { return 42; }
+        # Function callee_func spanning lines 30 to 40
+        self.callee_func = ProjectSymbol(
+            id="sym-callee-func",
+            name="compute",
+            qualified_name="src.main.compute",
+            kind=SymbolKind.FUNCTION,
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=30, start_column=0, end_line=40, end_column=10)
+            )
+        )
 
-        class User {
-            save() {}
-        }
+        # Enclosing Method caller_method spanning lines 50 to 60
+        self.caller_method = ProjectSymbol(
+            id="sym-caller-method",
+            name="MyClass.run",
+            qualified_name="src.main.MyClass.run",
+            kind=SymbolKind.METHOD,
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=50, start_column=0, end_line=60, end_column=10)
+            )
+        )
 
-        class Logger {
-            static log(msg) {}
-        }
+        # Method callee_method spanning lines 70 to 80
+        self.callee_method = ProjectSymbol(
+            id="sym-callee-method",
+            name="MyClass.save",
+            qualified_name="src.main.MyClass.save",
+            kind=SymbolKind.METHOD,
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=70, start_column=0, end_line=80, end_column=10)
+            )
+        )
 
-        function main() {
-            calculate();
-            const u = new User();
-            u.save();
-            Logger.log("info");
-        }
-        """
-        ctx = self._create_context(code, "main.js")
-        res = self.resolver.resolve(ctx)
-        call_res = self.call_analyzer.analyze(ctx, res)
+        # Node representation in base DependencyGraph
+        self.nodes = [
+            GraphNode(id=str(self.loc_file), name="main.py", type=DependencyNodeType.MODULE),
+            GraphNode(id=self.caller_func.id, name="process", type=DependencyNodeType.FUNCTION),
+            GraphNode(id=self.callee_func.id, name="compute", type=DependencyNodeType.FUNCTION),
+            GraphNode(id=self.caller_method.id, name="MyClass.run", type=DependencyNodeType.METHOD),
+            GraphNode(id=self.callee_method.id, name="MyClass.save", type=DependencyNodeType.METHOD),
+        ]
+        self.base_graph = DependencyGraph(
+            nodes=self.nodes,
+            edges=[],
+            metadata=DependencyMetadata(description="Call base", version="1.0.0")
+        )
 
-        graph = self.symbol_graph_builder.build(ctx)
-        initial_edge_count = graph.edge_count()
+        # Construct a reusable clean ProjectSymbolIndex to pass validation
+        clean_project = ProjectSemanticResult(
+            files={
+                self.loc_file: ProjectFile(
+                    path=self.loc_file,
+                    symbols=[self.caller_func, self.callee_func, self.caller_method, self.callee_method]
+                )
+            }
+        )
+        self.symbol_index = ProjectSymbolIndex(clean_project.files)
 
-        # Enrich graph with CALLS edges
-        enriched_graph = self.call_graph_builder.build(graph, ctx, call_res)
+    def test_function_to_function_calls(self) -> None:
+        # A reference to "compute" at line 15 (inside caller_func)
+        ref = SymbolReference(
+            name="compute",
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=15, start_column=4, end_line=15, end_column=11)
+            )
+        )
+        resolved_ref = ResolvedReference(reference=ref, target_symbol=self.callee_func)
+        
+        project_file = ProjectFile(
+            path=self.loc_file,
+            symbols=[self.caller_func, self.callee_func],
+            references=[ref]
+        )
+        linked = LinkedSemanticResult(
+            original_result=ProjectSemanticResult(files={self.loc_file: project_file}),
+            symbol_index=self.symbol_index,
+            import_export_result=ImportExportResolutionResult(),
+            reference_resolution_result=ReferenceResolutionResult(resolved_references=[resolved_ref]),
+            diagnostics=[]
+        )
 
-        self.assertGreater(enriched_graph.edge_count(), initial_edge_count)
-        call_edges = enriched_graph.get_edges(edge_type=EdgeType.CALLS)
-        self.assertGreaterEqual(len(call_edges), 4)
+        enriched = self.builder.build_call_graph(self.base_graph, linked)
 
-        kinds = {e.metadata["kind"] for e in call_edges}
-        self.assertIn(CallKind.FUNCTION.value, kinds)
-        self.assertIn(CallKind.CONSTRUCTOR.value, kinds)
-        self.assertIn(CallKind.METHOD.value, kinds)
-        self.assertIn(CallKind.STATIC_METHOD.value, kinds)
+        # Verify calls edge created: process -> compute
+        calls_edges = enriched.get_outgoing_edges("sym-caller-func")
+        self.assertEqual(len(calls_edges), 1)
+        self.assertEqual(calls_edges[0].target_id, "sym-callee-func")
+        self.assertEqual(calls_edges[0].type, DependencyEdgeType.CALLS)
 
-    def test_recursive_calls_enrichment(self) -> None:
-        code = """
-        function factorial(n) {
-            if (n <= 1) return 1;
-            return n * factorial(n - 1);
-        }
-        """
-        ctx = self._create_context(code, "rec.js")
-        res = self.resolver.resolve(ctx)
-        call_res = self.call_analyzer.analyze(ctx, res)
+    def test_method_to_method_and_mixed_calls(self) -> None:
+        # 1. caller_method calls callee_method (method-to-method)
+        ref1 = SymbolReference(
+            name="save",
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=55, start_column=4, end_line=55, end_column=8)
+            )
+        )
+        resolved_ref1 = ResolvedReference(reference=ref1, target_symbol=self.callee_method)
 
-        graph = self.symbol_graph_builder.build(ctx)
-        enriched = self.call_graph_builder.build(graph, ctx, call_res)
+        # 2. caller_func calls callee_method (function-to-method)
+        ref2 = SymbolReference(
+            name="save",
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=18, start_column=4, end_line=18, end_column=8)
+            )
+        )
+        resolved_ref2 = ResolvedReference(reference=ref2, target_symbol=self.callee_method)
 
-        call_edges = enriched.get_edges(edge_type=EdgeType.CALLS)
-        self.assertEqual(len(call_edges), 1)
-        self.assertEqual(call_edges[0].source, call_edges[0].target)
+        # 3. caller_method calls callee_func (method-to-function)
+        ref3 = SymbolReference(
+            name="compute",
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=58, start_column=4, end_line=58, end_column=11)
+            )
+        )
+        resolved_ref3 = ResolvedReference(reference=ref3, target_symbol=self.callee_func)
 
-    def test_unresolved_calls_ignored(self) -> None:
-        code = "function test() { unknownFunction(); }"
-        ctx = self._create_context(code, "unresolved.js")
-        res = self.resolver.resolve(ctx)
-        call_res = self.call_analyzer.analyze(ctx, res)
+        project_file = ProjectFile(
+            path=self.loc_file,
+            symbols=[self.caller_func, self.caller_method, self.callee_method, self.callee_func],
+            references=[ref1, ref2, ref3]
+        )
+        linked = LinkedSemanticResult(
+            original_result=ProjectSemanticResult(files={self.loc_file: project_file}),
+            symbol_index=self.symbol_index,
+            import_export_result=ImportExportResolutionResult(),
+            reference_resolution_result=ReferenceResolutionResult(
+                resolved_references=[resolved_ref1, resolved_ref2, resolved_ref3]
+            ),
+            diagnostics=[]
+        )
 
-        graph = self.symbol_graph_builder.build(ctx)
-        enriched = self.call_graph_builder.build(graph, ctx, call_res)
+        enriched = self.builder.build_call_graph(self.base_graph, linked)
 
-        call_edges = enriched.get_edges(edge_type=EdgeType.CALLS)
-        self.assertEqual(len(call_edges), 0)
+        # Check sym-caller-method outgoing edges
+        out_method = enriched.get_outgoing_edges("sym-caller-method")
+        self.assertEqual(len(out_method), 2)
+        targets = {e.target_id for e in out_method}
+        self.assertEqual(targets, {"sym-callee-method", "sym-callee-func"})
 
-    def test_duplicate_edge_prevention(self) -> None:
-        code = "function calc() {} function main() { calc(); }"
-        ctx = self._create_context(code, "dup.js")
-        res = self.resolver.resolve(ctx)
-        call_res = self.call_analyzer.analyze(ctx, res)
+        # Check sym-caller-func outgoing edges
+        out_func = enriched.get_outgoing_edges("sym-caller-func")
+        self.assertEqual(len(out_func), 1)
+        self.assertEqual(out_func[0].target_id, "sym-callee-method")
 
-        graph = self.symbol_graph_builder.build(ctx)
-        self.call_graph_builder.build(graph, ctx, call_res)
-        first_count = graph.edge_count()
+    def test_recursive_calls(self) -> None:
+        # caller_func calls caller_func
+        ref = SymbolReference(
+            name="process",
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=15, start_column=4, end_line=15, end_column=11)
+            )
+        )
+        resolved_ref = ResolvedReference(reference=ref, target_symbol=self.caller_func)
 
-        # Re-enriching should not add duplicate edges
-        self.call_graph_builder.build(graph, ctx, call_res)
-        second_count = graph.edge_count()
+        project_file = ProjectFile(path=self.loc_file, symbols=[self.caller_func], references=[ref])
+        linked = LinkedSemanticResult(
+            original_result=ProjectSemanticResult(files={self.loc_file: project_file}),
+            symbol_index=self.symbol_index,
+            import_export_result=ImportExportResolutionResult(),
+            reference_resolution_result=ReferenceResolutionResult(resolved_references=[resolved_ref]),
+            diagnostics=[]
+        )
 
-        self.assertEqual(first_count, second_count)
+        enriched = self.builder.build_call_graph(self.base_graph, linked)
 
-    def test_invalid_graph_raises_builder_error(self) -> None:
-        with self.assertRaises(GraphBuilderError):
-            self.call_graph_builder.build(None)  # type: ignore
+        calls = enriched.get_outgoing_edges("sym-caller-func")
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0].target_id, "sym-caller-func")
+
+    def test_duplicate_call_elimination(self) -> None:
+        # caller_func calls callee_func twice
+        ref1 = SymbolReference(
+            name="compute",
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=12, start_column=4, end_line=12, end_column=11)
+            )
+        )
+        ref2 = SymbolReference(
+            name="compute",
+            location=SymbolLocation(
+                file_path=self.loc_file,
+                location=Location(start_line=16, start_column=4, end_line=16, end_column=11)
+            )
+        )
+        resolved_ref1 = ResolvedReference(reference=ref1, target_symbol=self.callee_func)
+        resolved_ref2 = ResolvedReference(reference=ref2, target_symbol=self.callee_func)
+
+        project_file = ProjectFile(
+            path=self.loc_file,
+            symbols=[self.caller_func, self.callee_func],
+            references=[ref1, ref2]
+        )
+        linked = LinkedSemanticResult(
+            original_result=ProjectSemanticResult(files={self.loc_file: project_file}),
+            symbol_index=self.symbol_index,
+            import_export_result=ImportExportResolutionResult(),
+            reference_resolution_result=ReferenceResolutionResult(
+                resolved_references=[resolved_ref1, resolved_ref2]
+            ),
+            diagnostics=[]
+        )
+
+        enriched = self.builder.build_call_graph(self.base_graph, linked)
+
+        # Output edge count must be 1 due to deduplication
+        calls = enriched.get_outgoing_edges("sym-caller-func")
+        self.assertEqual(len(calls), 1)
+
+    def test_project_without_calls(self) -> None:
+        empty_index = ProjectSymbolIndex({})
+        linked = LinkedSemanticResult(
+            original_result=ProjectSemanticResult(files={}),
+            symbol_index=empty_index,
+            import_export_result=ImportExportResolutionResult(),
+            reference_resolution_result=ReferenceResolutionResult(),
+            diagnostics=[]
+        )
+
+        enriched = self.builder.build_call_graph(self.base_graph, linked)
+        self.assertEqual(len(enriched.edges), 0)
 
 
 if __name__ == "__main__":
