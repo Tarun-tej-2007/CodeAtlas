@@ -31,8 +31,8 @@ class GraphTraversal:
             current = queue.pop(0)
             yield current
 
-            # Sort targets lexicographically to guarantee deterministic execution
-            targets = sorted([edge.target_id for edge in graph.get_outgoing_edges(current)])
+            # Fetch pre-sorted targets in O(1)
+            targets = graph.get_outgoing_target_ids(current)
             for target in targets:
                 if target not in visited:
                     visited.add(target)
@@ -60,8 +60,8 @@ class GraphTraversal:
                 visited.add(current)
                 yield current
 
-                # Push to stack in reverse sorted order so they are popped in sorted order
-                targets = sorted([edge.target_id for edge in graph.get_outgoing_edges(current)], reverse=True)
+                # Fetch pre-sorted targets and push in reverse order using lazy reversed iterator
+                targets = reversed(graph.get_outgoing_target_ids(current))
                 for target in targets:
                     if target not in visited:
                         stack.append(target)
