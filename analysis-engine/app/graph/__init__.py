@@ -33,6 +33,8 @@ from app.graph.dependency_builder import DependencyGraphBuilder
 from app.graph.call_graph_builder import CallGraphBuilder
 from app.graph.cycle_detector import CycleResult, CycleDetector
 from app.graph.scc import SCCResult, SCCEngine
+from app.graph.query import DependencyGraphQuery
+from app.graph.traversal import GraphTraversal
 
 __all__ = [
     # Enums
@@ -70,4 +72,7 @@ __all__ = [
     # Cycle Detection & SCC Engine
     "CycleDetector",
     "SCCEngine",
+    # Query & Traversal APIs
+    "DependencyGraphQuery",
+    "GraphTraversal",
 ]
