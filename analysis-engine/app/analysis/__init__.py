@@ -26,6 +26,7 @@ from app.analysis.finding_analyzer import FindingAnalyzer
 from app.analysis.recommendation_engine import RecommendationEngine, RecommendationStrategy
 from app.analysis.summary_engine import SummaryEngine, SummaryMetricCalculator
 from app.analysis.report_builder import ReportSection, AnalysisReport, ReportBuilder, ReportSectionBuilder
+from app.analysis.prompt_context_builder import PromptContextSection, PromptContext, PromptContextBuilder
 
 __all__ = [
     # Enums
@@ -57,4 +58,8 @@ __all__ = [
     "AnalysisReport",
     "ReportBuilder",
     "ReportSectionBuilder",
+    # Prompt Context Builder & Models
+    "PromptContextSection",
+    "PromptContext",
+    "PromptContextBuilder",
 ]
