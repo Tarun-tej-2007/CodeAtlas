@@ -26,6 +26,7 @@ from app.ai_service.provider import AIProviderClient
 from app.ai_service.registry import AIProviderRegistry
 from app.ai_service.providers.openai_provider import OpenAIProvider
 from app.ai_service.service import AIService
+from app.ai_service.health import ProviderHealthStatus, HealthSummary, AIHealthMonitor
 
 __all__ = [
     # Enums
@@ -51,4 +52,8 @@ __all__ = [
     "OpenAIProvider",
     # AI Service Facade
     "AIService",
+    # Health Monitoring
+    "ProviderHealthStatus",
+    "HealthSummary",
+    "AIHealthMonitor",
 ]
