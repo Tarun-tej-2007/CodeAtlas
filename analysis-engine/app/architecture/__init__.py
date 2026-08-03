@@ -25,6 +25,11 @@ from app.architecture.models import (
 )
 from app.architecture.analyzer import ArchitectureAnalyzer
 from app.architecture.layer_detector import LayerRule, LayerDetector
+from app.architecture.layer_dependency import (
+    LayerDependency,
+    LayerDependencyResult,
+    LayerDependencyAnalyzer,
+)
 
 __all__ = [
     # Enums
@@ -48,4 +53,8 @@ __all__ = [
     # Layer Detector
     "LayerRule",
     "LayerDetector",
+    # Layer Dependency
+    "LayerDependency",
+    "LayerDependencyResult",
+    "LayerDependencyAnalyzer",
 ]
