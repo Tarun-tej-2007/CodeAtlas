@@ -23,6 +23,7 @@ from app.analysis.models import (
 )
 from app.analysis.analyzer import CodeAnalyzer
 from app.analysis.finding_analyzer import FindingAnalyzer
+from app.analysis.recommendation_engine import RecommendationEngine, RecommendationStrategy
 
 __all__ = [
     # Enums
@@ -43,4 +44,7 @@ __all__ = [
     "CodeAnalyzer",
     # Finding Analyzer
     "FindingAnalyzer",
+    # Recommendation Engine & Strategy
+    "RecommendationEngine",
+    "RecommendationStrategy",
 ]
