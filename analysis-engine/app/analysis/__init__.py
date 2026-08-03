@@ -25,6 +25,7 @@ from app.analysis.analyzer import CodeAnalyzer
 from app.analysis.finding_analyzer import FindingAnalyzer
 from app.analysis.recommendation_engine import RecommendationEngine, RecommendationStrategy
 from app.analysis.summary_engine import SummaryEngine, SummaryMetricCalculator
+from app.analysis.report_builder import ReportSection, AnalysisReport, ReportBuilder, ReportSectionBuilder
 
 __all__ = [
     # Enums
@@ -51,4 +52,9 @@ __all__ = [
     # Summary Engine & Calculator
     "SummaryEngine",
     "SummaryMetricCalculator",
+    # Report Builder & Models
+    "ReportSection",
+    "AnalysisReport",
+    "ReportBuilder",
+    "ReportSectionBuilder",
 ]
