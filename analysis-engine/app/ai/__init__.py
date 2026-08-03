@@ -22,6 +22,7 @@ from app.ai.models import (
     AIContextResult,
 )
 from app.ai.context_builder import AIContextBuilder
+from app.ai.repository_context import RepositoryContextBuilder
 
 __all__ = [
     # Enums
@@ -40,4 +41,6 @@ __all__ = [
     "AIContextResult",
     # Builder Abstract Interface
     "AIContextBuilder",
+    # Repository Context Builder
+    "RepositoryContextBuilder",
 ]
