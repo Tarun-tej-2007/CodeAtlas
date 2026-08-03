@@ -16,6 +16,7 @@ from app.architecture.models import ArchitectureAnalysisResult
 from app.ai.enums import ContextPriority, ContextType, SummaryGranularity
 from app.ai.context_builder import AIContextBuilder
 from app.ai.models import ContextSection, RepositoryContext, AIContextResult
+from app.ai.cache import ContextLookupCache
 
 
 class RepositoryContextBuilder(AIContextBuilder):
@@ -28,6 +29,7 @@ class RepositoryContextBuilder(AIContextBuilder):
         linked_result: Optional[LinkedSemanticResult] = None,
         graph: Optional[DependencyGraph] = None,
         arch_result: Optional[ArchitectureAnalysisResult] = None,
+        cache: Optional[ContextLookupCache] = None,
         *args,
         **kwargs,
     ) -> AIContextResult:
@@ -37,42 +39,56 @@ class RepositoryContextBuilder(AIContextBuilder):
         """
         diagnostics: List[str] = ["Started repository context build."]
 
-        # 1. Resolve semantic result input
-        active_semantic = semantic_result
-        if linked_result and linked_result.original_result:
-            active_semantic = linked_result.original_result
+        # Resolve files, languages, and symbol counts
+        if cache:
+            files_list = cache.files_list
+            languages_set = cache.languages
+            symbol_counts = cache.symbol_counts
+        else:
+            # 1. Resolve semantic result input
+            active_semantic = semantic_result
+            if linked_result and linked_result.original_result:
+                active_semantic = linked_result.original_result
 
-        # Gather files and languages
-        files_list: List[str] = []
-        languages_set = set()
-        symbol_counts: Dict[str, int] = {}
+            # Gather files and languages
+            files_list = []
+            languages_set = set()
+            symbol_counts = {}
 
-        if active_semantic:
-            for path, file_obj in active_semantic.files.items():
-                rel_path = Path(path).as_posix()
-                files_list.append(rel_path)
-                
-                # Determine language from extension
-                ext = path.suffix.lower()
-                if ext == ".py":
-                    languages_set.add("python")
-                elif ext in (".js", ".jsx"):
-                    languages_set.add("javascript")
-                elif ext in (".ts", ".tsx"):
-                    languages_set.add("typescript")
-                elif ext:
-                    languages_set.add(ext[1:])  # remove dot
-                else:
-                    languages_set.add("unknown")
+            if active_semantic:
+                for path, file_obj in active_semantic.files.items():
+                    rel_path = Path(path).as_posix()
+                    files_list.append(rel_path)
+                    
+                    # Determine language from extension
+                    ext = path.suffix.lower()
+                    if ext == ".py":
+                        languages_set.add("python")
+                    elif ext in (".js", ".jsx"):
+                        languages_set.add("javascript")
+                    elif ext in (".ts", ".tsx"):
+                        languages_set.add("typescript")
+                    elif ext:
+                        languages_set.add(ext[1:])  # remove dot
+                    else:
+                        languages_set.add("unknown")
 
-                # Count symbol kinds
-                for sym in file_obj.symbols:
-                    kind_str = str(sym.kind).lower()
-                    symbol_counts[kind_str] = symbol_counts.get(kind_str, 0) + 1
+                    # Count symbol kinds
+                    for sym in file_obj.symbols:
+                        kind_str = str(sym.kind).lower()
+                        symbol_counts[kind_str] = symbol_counts.get(kind_str, 0) + 1
 
         # 2. Gather dependency graph stats
         dep_stats: Dict[str, int] = {}
-        if graph:
+        if cache and (cache.graph_node_count > 0 or cache.graph_edge_count > 0):
+            node_count = cache.graph_node_count
+            edge_count = cache.graph_edge_count
+            dep_stats["node_count"] = node_count
+            dep_stats["edge_count"] = edge_count
+            dep_stats["average_degree"] = (
+                int((edge_count * 2) / node_count) if node_count > 0 else 0
+            )
+        elif graph:
             node_count = len(graph.nodes)
             edge_count = len(graph.edges)
             dep_stats["node_count"] = node_count

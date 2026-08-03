@@ -17,6 +17,7 @@ from app.architecture.models import ArchitectureAnalysisResult
 from app.ai.enums import ContextPriority, ContextType, SummaryGranularity
 from app.ai.context_builder import AIContextBuilder
 from app.ai.models import ContextSection, SymbolContext, AIContextResult
+from app.ai.cache import ContextLookupCache
 
 
 class SymbolContextBuilder(AIContextBuilder):
@@ -28,6 +29,7 @@ class SymbolContextBuilder(AIContextBuilder):
         linked_result: Optional[LinkedSemanticResult] = None,
         graph: Optional[DependencyGraph] = None,
         arch_result: Optional[ArchitectureAnalysisResult] = None,
+        cache: Optional[ContextLookupCache] = None,
         *args,
         **kwargs,
     ) -> AIContextResult:
@@ -51,55 +53,66 @@ class SymbolContextBuilder(AIContextBuilder):
                 for file_path, file_symbols in linked_result.symbol_index._by_file.items():
                     symbols_to_process.extend(file_symbols)
 
-        # 2. Build lookup cache maps in O(V + E) to ensure O(1) matching during iteration
-        exported_ids: Set[str] = set()
-        if linked_result and linked_result.symbol_index:
-            exported_ids = {
-                sym.id for sym in linked_result.symbol_index.get_exported_symbols()
-            }
+        # 2. Build or read lookup cache maps
+        if cache:
+            exported_ids = cache.exported_ids
+            import_usages = cache.import_usages
+            usages_in = cache.usages_in
+            usages_out = cache.usages_out
+            calls_in = cache.calls_in
+            calls_out = cache.calls_out
+            node_to_layer = cache.node_to_layer
+            symbol_diagnostics = cache.symbol_diagnostics
+        else:
+            # Build lookup cache maps in O(V + E) to ensure O(1) matching during iteration
+            exported_ids: Set[str] = set()
+            if linked_result and linked_result.symbol_index:
+                exported_ids = {
+                    sym.id for sym in linked_result.symbol_index.get_exported_symbols()
+                }
 
-        # Imports lookup map
-        import_usages: Dict[str, List[str]] = {}
-        if linked_result and linked_result.import_export_result:
-            for ri in linked_result.import_export_result.resolved_imports:
-                target_id = ri.target_symbol.id
-                importing_file = Path(ri.import_declaration.location.file_path).as_posix()
-                if target_id not in import_usages:
-                    import_usages[target_id] = []
-                import_usages[target_id].append(importing_file)
+            # Imports lookup map
+            import_usages: Dict[str, List[str]] = {}
+            if linked_result and linked_result.import_export_result:
+                for ri in linked_result.import_export_result.resolved_imports:
+                    target_id = ri.target_symbol.id
+                    importing_file = Path(ri.import_declaration.location.file_path).as_posix()
+                    if target_id not in import_usages:
+                        import_usages[target_id] = []
+                    import_usages[target_id].append(importing_file)
 
-        # Graph dependencies and calls maps
-        usages_in: Dict[str, List[str]] = {}
-        usages_out: Dict[str, List[str]] = {}
-        calls_in: Dict[str, List[str]] = {}
-        calls_out: Dict[str, List[str]] = {}
+            # Graph dependencies and calls maps
+            usages_in: Dict[str, List[str]] = {}
+            usages_out: Dict[str, List[str]] = {}
+            calls_in: Dict[str, List[str]] = {}
+            calls_out: Dict[str, List[str]] = {}
 
-        if graph:
-            for edge in graph.edges:
-                src = edge.source_id
-                tgt = edge.target_id
-                if edge.type == DependencyEdgeType.CALLS:
-                    calls_out.setdefault(src, []).append(tgt)
-                    calls_in.setdefault(tgt, []).append(src)
-                else:
-                    usages_out.setdefault(src, []).append(tgt)
-                    usages_in.setdefault(tgt, []).append(src)
+            if graph:
+                for edge in graph.edges:
+                    src = edge.source_id
+                    tgt = edge.target_id
+                    if edge.type == DependencyEdgeType.CALLS:
+                        calls_out.setdefault(src, []).append(tgt)
+                        calls_in.setdefault(tgt, []).append(src)
+                    else:
+                        usages_out.setdefault(src, []).append(tgt)
+                        usages_in.setdefault(tgt, []).append(src)
 
-        # Architectural layer mapping
-        node_to_layer: Dict[str, str] = {}
-        if arch_result:
-            for layer in arch_result.layers:
-                for node_id in layer.node_ids:
-                    node_to_layer[node_id] = layer.id
+            # Architectural layer mapping
+            node_to_layer: Dict[str, str] = {}
+            if arch_result:
+                for layer in arch_result.layers:
+                    for node_id in layer.node_ids:
+                        node_to_layer[node_id] = layer.id
 
-        # Architectural issues/diagnostics mapping
-        symbol_diagnostics: Dict[str, List[str]] = {}
-        if arch_result:
-            for issue in arch_result.issues:
-                if issue.location:
-                    symbol_diagnostics.setdefault(issue.location, []).append(
-                        f"[{issue.severity.upper()}] {issue.title}: {issue.description}"
-                    )
+            # Architectural issues/diagnostics mapping
+            symbol_diagnostics: Dict[str, List[str]] = {}
+            if arch_result:
+                for issue in arch_result.issues:
+                    if issue.location:
+                        symbol_diagnostics.setdefault(issue.location, []).append(
+                            f"[{issue.severity.upper()}] {issue.title}: {issue.description}"
+                        )
 
         # 3. Process matching symbols
         symbol_contexts: List[SymbolContext] = []

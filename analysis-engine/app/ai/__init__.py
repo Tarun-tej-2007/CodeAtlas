@@ -25,6 +25,7 @@ from app.ai.context_builder import AIContextBuilder
 from app.ai.repository_context import RepositoryContextBuilder
 from app.ai.symbol_context import SymbolContextBuilder
 from app.ai.context_composer import AIContextComposer
+from app.ai.cache import ContextLookupCache
 
 __all__ = [
     # Enums
@@ -49,4 +50,6 @@ __all__ = [
     "SymbolContextBuilder",
     # Context Composer
     "AIContextComposer",
+    # Performance Optimization Cache
+    "ContextLookupCache",
 ]

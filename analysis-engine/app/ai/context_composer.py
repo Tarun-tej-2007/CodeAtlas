@@ -11,6 +11,9 @@ from app.ai.enums import ContextPriority, ContextType, SummaryGranularity
 from app.ai.models import ContextSection, SymbolContext, AIContextResult
 
 
+from app.ai.cache import ContextLookupCache
+
+
 class AIContextComposer:
     """Stateless engine responsible for composing multiple AIContextResult inputs into a single DTO."""
 
@@ -26,6 +29,7 @@ class AIContextComposer:
         self,
         repo_result: Optional[AIContextResult] = None,
         symbol_result: Optional[AIContextResult] = None,
+        cache: Optional[ContextLookupCache] = None,
         *args,
         **kwargs,
     ) -> AIContextResult:
