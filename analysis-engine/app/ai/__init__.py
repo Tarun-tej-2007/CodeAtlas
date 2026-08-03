@@ -24,6 +24,7 @@ from app.ai.models import (
 from app.ai.context_builder import AIContextBuilder
 from app.ai.repository_context import RepositoryContextBuilder
 from app.ai.symbol_context import SymbolContextBuilder
+from app.ai.context_composer import AIContextComposer
 
 __all__ = [
     # Enums
@@ -46,4 +47,6 @@ __all__ = [
     "RepositoryContextBuilder",
     # Symbol Context Builder
     "SymbolContextBuilder",
+    # Context Composer
+    "AIContextComposer",
 ]
