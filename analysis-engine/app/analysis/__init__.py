@@ -22,6 +22,7 @@ from app.analysis.models import (
     AnalysisResult,
 )
 from app.analysis.analyzer import CodeAnalyzer
+from app.analysis.finding_analyzer import FindingAnalyzer
 
 __all__ = [
     # Enums
@@ -40,4 +41,6 @@ __all__ = [
     "AnalysisResult",
     # Analyzer Interface
     "CodeAnalyzer",
+    # Finding Analyzer
+    "FindingAnalyzer",
 ]
