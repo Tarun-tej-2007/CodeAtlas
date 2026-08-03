@@ -40,6 +40,7 @@ from app.ai_service.context import (
     AIContextManager,
 )
 from app.ai_service.pipeline import AIRequestPipeline
+from app.ai_service.response_processor import AIResponseProcessor
 
 __all__ = [
     # Enums
@@ -81,4 +82,6 @@ __all__ = [
     "AIContextManager",
     # Request Pipeline
     "AIRequestPipeline",
+    # Response Processor
+    "AIResponseProcessor",
 ]
