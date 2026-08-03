@@ -23,6 +23,7 @@ from app.ai_service.models import (
     AIResponse,
 )
 from app.ai_service.provider import AIProviderClient
+from app.ai_service.registry import AIProviderRegistry
 
 __all__ = [
     # Enums
@@ -42,4 +43,6 @@ __all__ = [
     "AIResponse",
     # Provider Client Interface
     "AIProviderClient",
+    # Provider Registry
+    "AIProviderRegistry",
 ]
