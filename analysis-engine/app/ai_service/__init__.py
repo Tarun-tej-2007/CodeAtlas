@@ -41,6 +41,7 @@ from app.ai_service.context import (
 )
 from app.ai_service.pipeline import AIRequestPipeline
 from app.ai_service.response_processor import AIResponseProcessor
+from app.ai_service.container import AIContainer, create_ai_services
 
 __all__ = [
     # Enums
@@ -84,4 +85,7 @@ __all__ = [
     "AIRequestPipeline",
     # Response Processor
     "AIResponseProcessor",
+    # Bootstrap / Dependency Container
+    "AIContainer",
+    "create_ai_services",
 ]
