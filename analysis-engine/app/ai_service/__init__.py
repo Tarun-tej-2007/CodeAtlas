@@ -27,6 +27,12 @@ from app.ai_service.registry import AIProviderRegistry
 from app.ai_service.providers.openai_provider import OpenAIProvider
 from app.ai_service.service import AIService
 from app.ai_service.health import ProviderHealthStatus, HealthSummary, AIHealthMonitor
+from app.ai_service.prompts import (
+    AIPromptTemplateError,
+    PromptTemplate,
+    RenderedPrompt,
+    AIPromptEngine,
+)
 
 __all__ = [
     # Enums
@@ -39,6 +45,7 @@ __all__ = [
     "AIProviderError",
     "AIRequestError",
     "AIResponseError",
+    "AIPromptTemplateError",
     # Models
     "AIUsage",
     "AIProviderConfig",
@@ -56,4 +63,8 @@ __all__ = [
     "ProviderHealthStatus",
     "HealthSummary",
     "AIHealthMonitor",
+    # Prompt Engine
+    "PromptTemplate",
+    "RenderedPrompt",
+    "AIPromptEngine",
 ]
