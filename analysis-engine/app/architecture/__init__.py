@@ -36,6 +36,11 @@ from app.architecture.layer_rules import (
     LayerRuleValidationResult,
     LayerRuleValidator,
 )
+from app.architecture.metrics import (
+    LayerMetrics,
+    ArchitectureMetricsResult,
+    ArchitectureMetricsEngine,
+)
 
 __all__ = [
     # Enums
@@ -68,4 +73,8 @@ __all__ = [
     "LayerRuleViolation",
     "LayerRuleValidationResult",
     "LayerRuleValidator",
+    # Metrics
+    "LayerMetrics",
+    "ArchitectureMetricsResult",
+    "ArchitectureMetricsEngine",
 ]
