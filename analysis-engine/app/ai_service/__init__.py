@@ -25,6 +25,7 @@ from app.ai_service.models import (
 from app.ai_service.provider import AIProviderClient
 from app.ai_service.registry import AIProviderRegistry
 from app.ai_service.providers.openai_provider import OpenAIProvider
+from app.ai_service.service import AIService
 
 __all__ = [
     # Enums
@@ -48,4 +49,6 @@ __all__ = [
     "AIProviderRegistry",
     # Concrete Providers
     "OpenAIProvider",
+    # AI Service Facade
+    "AIService",
 ]
