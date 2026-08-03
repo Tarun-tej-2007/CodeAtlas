@@ -24,11 +24,17 @@ from app.architecture.models import (
     ArchitectureMetric,
 )
 from app.architecture.analyzer import ArchitectureAnalyzer
-from app.architecture.layer_detector import LayerRule, LayerDetector
+from app.architecture.layer_detector import LayerRule as LayerDetectionRule, LayerDetector
 from app.architecture.layer_dependency import (
     LayerDependency,
     LayerDependencyResult,
     LayerDependencyAnalyzer,
+)
+from app.architecture.layer_rules import (
+    LayerRule,
+    LayerRuleViolation,
+    LayerRuleValidationResult,
+    LayerRuleValidator,
 )
 
 __all__ = [
@@ -51,10 +57,15 @@ __all__ = [
     # Analyzer Interface
     "ArchitectureAnalyzer",
     # Layer Detector
-    "LayerRule",
+    "LayerDetectionRule",
     "LayerDetector",
     # Layer Dependency
     "LayerDependency",
     "LayerDependencyResult",
     "LayerDependencyAnalyzer",
+    # Layer Rules & Validation
+    "LayerRule",
+    "LayerRuleViolation",
+    "LayerRuleValidationResult",
+    "LayerRuleValidator",
 ]
