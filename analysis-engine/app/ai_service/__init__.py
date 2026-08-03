@@ -33,6 +33,12 @@ from app.ai_service.prompts import (
     RenderedPrompt,
     AIPromptEngine,
 )
+from app.ai_service.context import (
+    AIContextError,
+    ContextSection,
+    AIContext,
+    AIContextManager,
+)
 
 __all__ = [
     # Enums
@@ -46,6 +52,7 @@ __all__ = [
     "AIRequestError",
     "AIResponseError",
     "AIPromptTemplateError",
+    "AIContextError",
     # Models
     "AIUsage",
     "AIProviderConfig",
@@ -67,4 +74,8 @@ __all__ = [
     "PromptTemplate",
     "RenderedPrompt",
     "AIPromptEngine",
+    # Context Manager
+    "ContextSection",
+    "AIContext",
+    "AIContextManager",
 ]
