@@ -24,6 +24,7 @@ from app.architecture.models import (
     ArchitectureMetric,
 )
 from app.architecture.analyzer import ArchitectureAnalyzer
+from app.architecture.layer_detector import LayerRule, LayerDetector
 
 __all__ = [
     # Enums
@@ -44,4 +45,7 @@ __all__ = [
     "ArchitectureMetric",
     # Analyzer Interface
     "ArchitectureAnalyzer",
+    # Layer Detector
+    "LayerRule",
+    "LayerDetector",
 ]
