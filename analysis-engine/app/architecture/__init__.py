@@ -41,6 +41,10 @@ from app.architecture.metrics import (
     ArchitectureMetricsResult,
     ArchitectureMetricsEngine,
 )
+from app.architecture.smell_detector import (
+    SmellDetectorConfig,
+    ArchitectureSmellDetector,
+)
 
 __all__ = [
     # Enums
@@ -77,4 +81,7 @@ __all__ = [
     "LayerMetrics",
     "ArchitectureMetricsResult",
     "ArchitectureMetricsEngine",
+    # Smell Detection
+    "SmellDetectorConfig",
+    "ArchitectureSmellDetector",
 ]
