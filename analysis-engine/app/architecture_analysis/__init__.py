@@ -11,6 +11,8 @@ from app.architecture_analysis.analyzer import ArchitectureAnalyzer
 from app.architecture_analysis.rule import ArchitectureRule
 from app.architecture_analysis.registry import ArchitectureRuleRegistry
 from app.architecture_analysis.engine import ArchitectureRuleEngine
+from app.architecture_analysis.rules.circular_dependency import CircularDependencyRule
+from app.architecture_analysis.rules.dependency_chain import DependencyChainRule
 
 __all__ = [
     "ArchitectureRuleType",
@@ -25,4 +27,6 @@ __all__ = [
     "ArchitectureRule",
     "ArchitectureRuleRegistry",
     "ArchitectureRuleEngine",
+    "CircularDependencyRule",
+    "DependencyChainRule",
 ]
