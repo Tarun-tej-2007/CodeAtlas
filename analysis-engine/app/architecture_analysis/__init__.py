@@ -13,6 +13,8 @@ from app.architecture_analysis.registry import ArchitectureRuleRegistry
 from app.architecture_analysis.engine import ArchitectureRuleEngine
 from app.architecture_analysis.rules.circular_dependency import CircularDependencyRule
 from app.architecture_analysis.rules.dependency_chain import DependencyChainRule
+from app.architecture_analysis.semantic_context import ArchitectureSemanticContext
+from app.architecture_analysis.semantic_rules import SemanticArchitectureRule
 
 __all__ = [
     "ArchitectureRuleType",
@@ -29,4 +31,6 @@ __all__ = [
     "ArchitectureRuleEngine",
     "CircularDependencyRule",
     "DependencyChainRule",
+    "ArchitectureSemanticContext",
+    "SemanticArchitectureRule",
 ]
