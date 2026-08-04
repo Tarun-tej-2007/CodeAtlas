@@ -17,6 +17,7 @@ from app.architecture_analysis.semantic_context import ArchitectureSemanticConte
 from app.architecture_analysis.semantic_rules import SemanticArchitectureRule
 from app.architecture_analysis.context_builder import ArchitectureAIContextBuilder
 from app.architecture_analysis.prompt_templates import ArchitecturePromptTemplates
+from app.architecture_analysis.ai_analyzer import AIArchitectureAnalysisResult, AIArchitectureAnalyzer
 
 __all__ = [
     "ArchitectureRuleType",
@@ -37,4 +38,6 @@ __all__ = [
     "SemanticArchitectureRule",
     "ArchitectureAIContextBuilder",
     "ArchitecturePromptTemplates",
+    "AIArchitectureAnalysisResult",
+    "AIArchitectureAnalyzer",
 ]
