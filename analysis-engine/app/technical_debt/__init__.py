@@ -10,6 +10,7 @@ from app.technical_debt.models import (
 from app.technical_debt.analyzer import TechnicalDebtAnalyzer
 from app.technical_debt.rule import TechnicalDebtRule
 from app.technical_debt.registry import TechnicalDebtRuleRegistry
+from app.technical_debt.engine import TechnicalDebtAnalysisEngine
 
 __all__ = [
     "TechnicalDebtCategory",
@@ -22,4 +23,5 @@ __all__ = [
     "TechnicalDebtAnalyzer",
     "TechnicalDebtRule",
     "TechnicalDebtRuleRegistry",
+    "TechnicalDebtAnalysisEngine",
 ]
