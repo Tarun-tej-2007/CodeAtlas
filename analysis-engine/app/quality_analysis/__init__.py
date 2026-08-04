@@ -6,6 +6,7 @@ from app.quality_analysis.models import QualityMetric, QualitySummary, QualityRe
 from app.quality_analysis.analyzer import QualityAnalyzer
 from app.quality_analysis.metric import QualityMetricEvaluator
 from app.quality_analysis.registry import QualityMetricRegistry
+from app.quality_analysis.engine import QualityEvaluationEngine
 
 __all__ = [
     "MetricCategory",
@@ -18,4 +19,5 @@ __all__ = [
     "QualityAnalyzer",
     "QualityMetricEvaluator",
     "QualityMetricRegistry",
+    "QualityEvaluationEngine",
 ]
