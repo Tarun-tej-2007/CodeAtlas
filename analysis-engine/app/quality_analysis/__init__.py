@@ -11,6 +11,8 @@ from app.quality_analysis.metrics.maintainability import (
     AverageFileSizeEvaluator,
     SymbolDensityEvaluator,
 )
+from app.quality_analysis.metrics.coupling import AverageCouplingEvaluator
+from app.quality_analysis.metrics.cohesion import AverageCohesionEvaluator
 
 __all__ = [
     "MetricCategory",
@@ -26,4 +28,6 @@ __all__ = [
     "QualityEvaluationEngine",
     "AverageFileSizeEvaluator",
     "SymbolDensityEvaluator",
+    "AverageCouplingEvaluator",
+    "AverageCohesionEvaluator",
 ]
