@@ -14,6 +14,7 @@ from app.technical_debt.engine import TechnicalDebtAnalysisEngine
 from app.technical_debt.rules.dead_code import DeadCodeRule
 from app.technical_debt.rules.deprecated_usage import DeprecatedUsageRule
 from app.technical_debt.rules.duplication import DuplicationRule
+from app.technical_debt.scoring import TechnicalDebtScorer
 
 __all__ = [
     "TechnicalDebtCategory",
@@ -30,4 +31,5 @@ __all__ = [
     "DeadCodeRule",
     "DeprecatedUsageRule",
     "DuplicationRule",
+    "TechnicalDebtScorer",
 ]
