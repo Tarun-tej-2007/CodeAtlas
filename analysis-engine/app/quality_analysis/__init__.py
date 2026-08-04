@@ -13,6 +13,7 @@ from app.quality_analysis.metrics.maintainability import (
 )
 from app.quality_analysis.metrics.coupling import AverageCouplingEvaluator
 from app.quality_analysis.metrics.cohesion import AverageCohesionEvaluator
+from app.quality_analysis.metrics.complexity import AverageNestingDepthEvaluator
 
 __all__ = [
     "MetricCategory",
@@ -30,4 +31,5 @@ __all__ = [
     "SymbolDensityEvaluator",
     "AverageCouplingEvaluator",
     "AverageCohesionEvaluator",
+    "AverageNestingDepthEvaluator",
 ]
