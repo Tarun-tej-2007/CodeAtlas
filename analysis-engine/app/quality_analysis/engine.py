@@ -24,6 +24,8 @@ class QualityEvaluationEngine(QualityAnalyzer):
 
     def analyze(self, *, project_name: str, context: Any, **kwargs) -> QualityReport:
         """Evaluates all registered metrics against the context and compiles a report."""
+        if not project_name or not project_name.strip():
+            raise ValueError("project_name must be a non-empty string.")
         evaluators = self.registry.list_metrics()
         evaluated_metrics: List[QualityMetric] = []
 

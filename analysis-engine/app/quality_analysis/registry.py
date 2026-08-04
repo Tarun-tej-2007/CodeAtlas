@@ -20,6 +20,11 @@ class QualityMetricRegistry:
 
         Raises QualityMetricError if an evaluator with the same name already exists.
         """
+        if evaluator is None:
+            raise QualityMetricError("Cannot register None evaluator.")
+        if not hasattr(evaluator, "metric_name") or not evaluator.metric_name:
+            raise QualityMetricError("Evaluator must possess a non-empty 'metric_name'.")
+
         with self._lock:
             name = evaluator.metric_name
             if name in self._evaluators:
