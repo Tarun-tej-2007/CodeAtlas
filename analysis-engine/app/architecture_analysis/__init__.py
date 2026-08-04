@@ -16,6 +16,7 @@ from app.architecture_analysis.rules.dependency_chain import DependencyChainRule
 from app.architecture_analysis.semantic_context import ArchitectureSemanticContext
 from app.architecture_analysis.semantic_rules import SemanticArchitectureRule
 from app.architecture_analysis.context_builder import ArchitectureAIContextBuilder
+from app.architecture_analysis.prompt_templates import ArchitecturePromptTemplates
 
 __all__ = [
     "ArchitectureRuleType",
@@ -35,4 +36,5 @@ __all__ = [
     "ArchitectureSemanticContext",
     "SemanticArchitectureRule",
     "ArchitectureAIContextBuilder",
+    "ArchitecturePromptTemplates",
 ]
