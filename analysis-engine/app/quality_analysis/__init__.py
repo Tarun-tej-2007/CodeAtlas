@@ -16,6 +16,7 @@ from app.quality_analysis.metrics.cohesion import AverageCohesionEvaluator
 from app.quality_analysis.metrics.complexity import AverageNestingDepthEvaluator
 from app.quality_analysis.scoring import QualityScorer
 from app.quality_analysis.context_builder import QualityAIContextBuilder
+from app.quality_analysis.ai_analyzer import QualityAIAnalysisResult, AIQualityAnalyzer
 
 __all__ = [
     "MetricCategory",
@@ -36,4 +37,6 @@ __all__ = [
     "AverageNestingDepthEvaluator",
     "QualityScorer",
     "QualityAIContextBuilder",
+    "QualityAIAnalysisResult",
+    "AIQualityAnalyzer",
 ]
