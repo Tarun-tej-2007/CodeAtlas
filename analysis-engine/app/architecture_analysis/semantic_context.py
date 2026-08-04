@@ -10,24 +10,50 @@ class ArchitectureSemanticContext:
 
     def __init__(self, semantic_result: Any) -> None:
         """Initializes the adapter by extracting and indexing symbols, references, and scopes."""
-        if not any(hasattr(semantic_result, attr) for attr in ("symbols", "references", "scopes")):
+        if hasattr(semantic_result, "original_result"):
+            # Parse Project-level LinkedSemanticResult structure
+            files = getattr(semantic_result.original_result, "files", {}) or {}
+            self._symbols = []
+            for file_obj in files.values():
+                self._symbols.extend(getattr(file_obj, "symbols", []) or [])
+
+            ref_res = getattr(semantic_result, "reference_resolution_result", None)
+            resolved_refs = getattr(ref_res, "resolved_references", []) or []
+            self._references = [r.reference for r in resolved_refs if hasattr(r, "reference")]
+            self._scopes = []
+        elif any(hasattr(semantic_result, attr) for attr in ("symbols", "references", "scopes")):
+            # Parse file-level SemanticResult structure
+            self._symbols = getattr(semantic_result, "symbols", []) or []
+            self._references = getattr(semantic_result, "references", []) or []
+            self._scopes = getattr(semantic_result, "scopes", []) or []
+        else:
             raise ValueError("Object does not appear to be a valid semantic analysis output model.")
 
-        self._symbols = getattr(semantic_result, "symbols", []) or []
-        self._references = getattr(semantic_result, "references", []) or []
-        self._scopes = getattr(semantic_result, "scopes", []) or []
+        # Build lookup tables for O(1) reads
+        self._symbols_by_id = {sym.id: sym for sym in self._symbols if hasattr(sym, "id")}
+        self._symbols_by_qn = {
+            sym.qualified_name: sym for sym in self._symbols if hasattr(sym, "qualified_name")
+        }
+        self._scopes_by_id = {scope.id: scope for scope in self._scopes if hasattr(scope, "id")}
 
-        # Local read-only dictionaries for fast O(1) indexed lookups
-        self._symbols_by_id = {sym.id: sym for sym in self._symbols}
-        self._symbols_by_qn = {sym.qualified_name: sym for sym in self._symbols}
-        self._scopes_by_id = {scope.id: scope for scope in self._scopes}
-
-        refs_by_sym = {}
+        # Group references by symbol_id for faster index query lookups
+        self._refs_by_sym = {}
         for ref in self._references:
-            if ref.symbol_id not in refs_by_sym:
-                refs_by_sym[ref.symbol_id] = []
-            refs_by_sym[ref.symbol_id].append(ref)
-        self._refs_by_sym = {k: tuple(v) for k, v in refs_by_sym.items()}
+            sym_id = getattr(ref, "symbol_id", None)
+            if sym_id is None and hasattr(ref, "name"):
+                # Handle SymbolReference by mapping its name to registered symbol ID
+                target_sym = self.get_symbol_by_qualified_name(ref.name)
+                if not target_sym:
+                    # Fallback to simple name lookup
+                    target_sym = next((s for s in self._symbols if getattr(s, "name", None) == ref.name), None)
+                if target_sym:
+                    sym_id = getattr(target_sym, "id", None)
+
+            if sym_id is not None:
+                if sym_id not in self._refs_by_sym:
+                    self._refs_by_sym[sym_id] = []
+                self._refs_by_sym[sym_id].append(ref)
+        self._refs_by_sym = {k: tuple(v) for k, v in self._refs_by_sym.items()}
 
     def get_symbol_by_id(self, symbol_id: str) -> Optional[SemanticSymbol]:
         """Looks up a declared semantic symbol by its identifier."""

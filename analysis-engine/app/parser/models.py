@@ -33,11 +33,14 @@ class ParseResult(BaseModel):
     parse_duration_ms: float = Field(default=0.0, ge=0.0, description="Total parsing duration in milliseconds.")
 
 
+from typing import Any, Optional
+
 class AnalysisResult(BaseModel):
     """Aggregate result holding both scanner and parsing pipeline outputs."""
 
     scan_result: ScanResult
     parse_result: ParseResult
+    architecture_result: Optional[Any] = Field(default=None, description="Optional AI architecture analysis integration result.")
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
