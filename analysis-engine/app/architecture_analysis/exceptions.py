@@ -11,3 +11,9 @@ class ArchitectureRuleError(ArchitectureAnalysisError):
     """Exception raised when an architecture rule is violated or fails configuration."""
 
     pass
+
+
+class ArchitectureRegistryError(ArchitectureAnalysisError):
+    """Exception raised when registering or looking up rules fails in the registry."""
+
+    pass
