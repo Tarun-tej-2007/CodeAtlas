@@ -18,3 +18,5 @@ tree-sitter-typescript>=0.21.0
 tree-sitter-python>=0.21.0
 httpx>=0.25.0
 httpx2>=0.0.1
+openai>=1.0.0
+
