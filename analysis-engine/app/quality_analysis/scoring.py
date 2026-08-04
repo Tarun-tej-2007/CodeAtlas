@@ -24,6 +24,8 @@ class QualityScorer:
     def score(self, metrics: Iterable[QualityMetric]) -> QualitySummary:
         """Aggregates metrics and calculates the weighted category and overall scores."""
         metrics_list = list(metrics)
+        if any(not isinstance(m, QualityMetric) for m in metrics_list):
+            raise TypeError("All items in metrics collection must be instances of QualityMetric.")
         if not metrics_list:
             return QualitySummary(
                 overall_score=0.0,
