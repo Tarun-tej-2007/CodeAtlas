@@ -7,6 +7,10 @@ from app.quality_analysis.analyzer import QualityAnalyzer
 from app.quality_analysis.metric import QualityMetricEvaluator
 from app.quality_analysis.registry import QualityMetricRegistry
 from app.quality_analysis.engine import QualityEvaluationEngine
+from app.quality_analysis.metrics.maintainability import (
+    AverageFileSizeEvaluator,
+    SymbolDensityEvaluator,
+)
 
 __all__ = [
     "MetricCategory",
@@ -20,4 +24,6 @@ __all__ = [
     "QualityMetricEvaluator",
     "QualityMetricRegistry",
     "QualityEvaluationEngine",
+    "AverageFileSizeEvaluator",
+    "SymbolDensityEvaluator",
 ]
