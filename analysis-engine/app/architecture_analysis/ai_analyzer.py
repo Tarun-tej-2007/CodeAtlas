@@ -39,6 +39,9 @@ class AIArchitectureAnalyzer(ArchitectureAnalyzer):
         response_processor: AIResponseProcessor,
     ) -> None:
         """Initializes the analyzer with dependency-injected services."""
+        if any(arg is None for arg in (rule_engine, context_builder, prompt_templates, request_pipeline, response_processor)):
+            raise ValueError("All AIArchitectureAnalyzer constructor dependencies must not be None.")
+
         self.rule_engine = rule_engine
         self.context_builder = context_builder
         self.prompt_templates = prompt_templates
