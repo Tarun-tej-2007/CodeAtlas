@@ -7,6 +7,7 @@ from app.unified_analysis.analyzer import UnifiedAnalysisAnalyzer
 from app.unified_analysis.contributor import UnifiedAnalysisContributor
 from app.unified_analysis.registry import UnifiedAnalysisRegistry
 from app.unified_analysis.engine import UnifiedAnalysisEngine
+from app.unified_analysis.context_builder import UnifiedAIContextBuilder
 
 __all__ = [
     "AnalysisStatus",
@@ -17,4 +18,5 @@ __all__ = [
     "UnifiedAnalysisContributor",
     "UnifiedAnalysisRegistry",
     "UnifiedAnalysisEngine",
+    "UnifiedAIContextBuilder",
 ]
