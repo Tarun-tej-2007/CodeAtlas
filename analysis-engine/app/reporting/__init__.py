@@ -11,6 +11,8 @@ from app.reporting.comparison import ReportSectionDifference, ReportComparison, 
 from app.reporting.context_builder import ReportAIContextBuilder
 from app.reporting.prompt_templates import ReportingPromptTemplates
 from app.reporting.ai_analyzer import AIReportAnalysisResult, AIReportAnalyzer
+from app.reporting.repository import ReportRepository
+from app.reporting.persistence import ReportPersistenceService
 
 __all__ = [
     "ReportFormat",
@@ -33,4 +35,6 @@ __all__ = [
     "ReportingPromptTemplates",
     "AIReportAnalysisResult",
     "AIReportAnalyzer",
+    "ReportRepository",
+    "ReportPersistenceService",
 ]
