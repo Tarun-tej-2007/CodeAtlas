@@ -44,6 +44,7 @@ class AnalysisResult(BaseModel):
     technical_debt_result: Optional[Any] = Field(default=None, description="Optional Technical Debt analysis integration result.")
     unified_result: Optional[Any] = Field(default=None, description="Optional Unified analysis aggregation result.")
     report_result: Optional[Any] = Field(default=None, description="Optional report generation compilation or AI summary result.")
+    # Integrates with persistence workflow
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 

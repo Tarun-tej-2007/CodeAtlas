@@ -46,6 +46,7 @@ class AnalysisService:
         unified_analysis_analyzer: Any = None,
         report_generator: Any = None,
         ai_report_analyzer: Any = None,
+        report_persistence_service: Any = None,
     ) -> None:
         """Initializes the AnalysisService with injected sub-services.
 
@@ -62,6 +63,7 @@ class AnalysisService:
             unified_analysis_analyzer: Optional UnifiedAnalysisEngine override.
             report_generator: Optional ReportGenerator override.
             ai_report_analyzer: Optional AIReportAnalyzer override.
+            report_persistence_service: Optional ReportPersistenceService override.
         """
         self.workspace_manager = workspace_manager or WorkspaceManager()
         self.clone_service = clone_service or RepositoryCloneService()
@@ -75,6 +77,7 @@ class AnalysisService:
         self.unified_analysis_analyzer = unified_analysis_analyzer
         self.report_generator = report_generator
         self.ai_report_analyzer = ai_report_analyzer
+        self.report_persistence_service = report_persistence_service
 
     def analyze_repository(
         self,
@@ -341,6 +344,9 @@ class AnalysisService:
                     )
                 else:
                     report_result = compiled_report
+
+                if self.report_persistence_service is not None and report_result is not None:
+                    self.report_persistence_service.save_report(report_result)
             
             return AnalysisResult(
                 scan_result=scan_result,
