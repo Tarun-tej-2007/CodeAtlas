@@ -27,7 +27,7 @@ class ArchitectureAIContextBuilder:
             "medium_count": report.summary.medium_count,
             "high_count": report.summary.high_count,
             "critical_count": report.summary.critical_count,
-        }
+        } 
 
         # 2. Build Sections
         sections: List[ContextSection] = []
