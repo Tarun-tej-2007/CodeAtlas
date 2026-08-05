@@ -35,12 +35,14 @@ async def submit_analysis(
     logger.info("Received analysis request for project %s [Request-ID: %s]", request.project_id, req_id)
     
     unified_res = None
+    report_res = None
     if run_sync:
         res = analysis_service.analyze_repository(
             repository_url=request.repository_url,
             project_id=request.project_id,
         )
-        unified_res = res.unified_result
+        unified_res = getattr(res, "unified_result", None)
+        report_res = getattr(res, "report_result", None)
         msg = "Analysis completed synchronously"
         status_code = AnalysisStatus.COMPLETED
     else:
@@ -54,4 +56,5 @@ async def submit_analysis(
         project_id=request.project_id,
         repository_url=request.repository_url,
         unified_result=unified_res,
+        report_result=report_res,
     )
