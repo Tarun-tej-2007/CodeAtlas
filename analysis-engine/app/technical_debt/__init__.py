@@ -17,6 +17,7 @@ from app.technical_debt.rules.duplication import DuplicationRule
 from app.technical_debt.scoring import TechnicalDebtScorer
 from app.technical_debt.context_builder import TechnicalDebtAIContextBuilder
 from app.technical_debt.prompt_templates import TechnicalDebtPromptTemplates
+from app.technical_debt.ai_analyzer import TechnicalDebtAIAnalysisResult, AITechnicalDebtAnalyzer
 
 __all__ = [
     "TechnicalDebtCategory",
@@ -36,4 +37,6 @@ __all__ = [
     "TechnicalDebtScorer",
     "TechnicalDebtAIContextBuilder",
     "TechnicalDebtPromptTemplates",
+    "TechnicalDebtAIAnalysisResult",
+    "AITechnicalDebtAnalyzer",
 ]
