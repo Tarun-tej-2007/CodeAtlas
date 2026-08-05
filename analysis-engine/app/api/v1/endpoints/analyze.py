@@ -36,6 +36,7 @@ async def submit_analysis(
     
     unified_res = None
     report_res = None
+    dashboard_res = None
     if run_sync:
         res = analysis_service.analyze_repository(
             repository_url=request.repository_url,
@@ -43,6 +44,7 @@ async def submit_analysis(
         )
         unified_res = getattr(res, "unified_result", None)
         report_res = getattr(res, "report_result", None)
+        dashboard_res = getattr(res, "dashboard_result", None)
         msg = "Analysis completed synchronously"
         status_code = AnalysisStatus.COMPLETED
     else:
@@ -57,4 +59,5 @@ async def submit_analysis(
         repository_url=request.repository_url,
         unified_result=unified_res,
         report_result=report_res,
+        dashboard_result=dashboard_res,
     )

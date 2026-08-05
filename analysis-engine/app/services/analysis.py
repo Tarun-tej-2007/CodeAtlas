@@ -47,6 +47,7 @@ class AnalysisService:
         report_generator: Any = None,
         ai_report_analyzer: Any = None,
         report_persistence_service: Any = None,
+        dashboard_engine: Any = None,
     ) -> None:
         """Initializes the AnalysisService with injected sub-services.
 
@@ -64,6 +65,7 @@ class AnalysisService:
             report_generator: Optional ReportGenerator override.
             ai_report_analyzer: Optional AIReportAnalyzer override.
             report_persistence_service: Optional ReportPersistenceService override.
+            dashboard_engine: Optional DashboardAggregationEngine override.
         """
         self.workspace_manager = workspace_manager or WorkspaceManager()
         self.clone_service = clone_service or RepositoryCloneService()
@@ -78,6 +80,7 @@ class AnalysisService:
         self.report_generator = report_generator
         self.ai_report_analyzer = ai_report_analyzer
         self.report_persistence_service = report_persistence_service
+        self.dashboard_engine = dashboard_engine
 
     def analyze_repository(
         self,
@@ -347,6 +350,45 @@ class AnalysisService:
 
                 if self.report_persistence_service is not None and report_result is not None:
                     self.report_persistence_service.save_report(report_result)
+
+            # 9. Execute Dashboard Aggregation if configured
+            dashboard_result = None
+            if self.dashboard_engine is not None:
+                # Compile lightweight dashboard context containing already-computed outputs
+                class DashboardCompilationContext:
+                    def __init__(
+                        self,
+                        scan_res: Any,
+                        parse_res: Any,
+                        arch_res: Any,
+                        qual_res: Any,
+                        tech_res: Any,
+                        unified_res: Any,
+                        report_res: Any,
+                    ) -> None:
+                        self.scan_result = scan_res
+                        self.parse_result = parse_res
+                        self.architecture_result = arch_res
+                        self.quality_result = qual_res
+                        self.technical_debt_result = tech_res
+                        self.unified_result = unified_res
+                        self.report_result = report_res
+                        self.metadata = {}
+
+                dashboard_context = DashboardCompilationContext(
+                    scan_res=scan_result,
+                    parse_res=parse_result,
+                    arch_res=architecture_result,
+                    qual_res=None,
+                    tech_res=technical_debt_result,
+                    unified_res=unified_result,
+                    report_res=report_result,
+                )
+
+                dashboard_result = self.dashboard_engine.compile(
+                    project_name=str(project_id),
+                    context=dashboard_context,
+                )
             
             return AnalysisResult(
                 scan_result=scan_result,
@@ -355,6 +397,7 @@ class AnalysisService:
                 technical_debt_result=technical_debt_result,
                 unified_result=unified_result,
                 report_result=report_result,
+                dashboard_result=dashboard_result,
             )
         finally:
             try:
