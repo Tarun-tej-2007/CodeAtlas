@@ -1,7 +1,7 @@
 """Analysis engine schema definitions for the CodeAtlas Analysis Engine."""
 
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 import uuid
 from pydantic import BaseModel, Field
 
@@ -30,6 +30,7 @@ class AnalysisResponse(BaseModel):
     message: str = Field(..., description="User-friendly status message.")
     project_id: uuid.UUID = Field(..., description="Unique ID of the project workspace.")
     repository_url: str = Field(..., description="Git clone URL of the repository.")
+    unified_result: Optional[Any] = Field(default=None, description="Unified Analysis output DTO/report.")
 
 
 class ErrorDetails(BaseModel):
