@@ -253,10 +253,29 @@ class AnalysisService:
                     tech_res=technical_debt_result,
                 )
 
-                unified_result = self.unified_analysis_analyzer.analyze(
-                    project_name=str(project_id),
-                    context=unified_context,
-                )
+                from app.unified_analysis.ai_analyzer import AIUnifiedAnalyzer
+                if isinstance(self.unified_analysis_analyzer, AIUnifiedAnalyzer):
+                    if ai_provider and ai_model_type:
+                        unified_result = self.unified_analysis_analyzer.analyze(
+                            project_name=str(project_id),
+                            context=unified_context,
+                            provider=ai_provider,
+                            model_type=ai_model_type,
+                            variables=variables,
+                            priority=priority,
+                            temperature=temperature,
+                            max_tokens=max_tokens,
+                        )
+                    else:
+                        unified_result = self.unified_analysis_analyzer.engine.analyze(
+                            project_name=str(project_id),
+                            context=unified_context,
+                        )
+                else:
+                    unified_result = self.unified_analysis_analyzer.analyze(
+                        project_name=str(project_id),
+                        context=unified_context,
+                    )
             
             return AnalysisResult(
                 scan_result=scan_result,
