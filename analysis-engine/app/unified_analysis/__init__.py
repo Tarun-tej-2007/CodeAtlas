@@ -9,6 +9,7 @@ from app.unified_analysis.registry import UnifiedAnalysisRegistry
 from app.unified_analysis.engine import UnifiedAnalysisEngine
 from app.unified_analysis.context_builder import UnifiedAIContextBuilder
 from app.unified_analysis.prompt_templates import UnifiedAnalysisPromptTemplates
+from app.unified_analysis.ai_analyzer import UnifiedAIAnalysisResult, AIUnifiedAnalyzer
 
 __all__ = [
     "AnalysisStatus",
@@ -21,4 +22,6 @@ __all__ = [
     "UnifiedAnalysisEngine",
     "UnifiedAIContextBuilder",
     "UnifiedAnalysisPromptTemplates",
+    "UnifiedAIAnalysisResult",
+    "AIUnifiedAnalyzer",
 ]
