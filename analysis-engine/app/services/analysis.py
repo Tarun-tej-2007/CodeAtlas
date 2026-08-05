@@ -42,6 +42,7 @@ class AnalysisService:
         linking_pipeline: SemanticLinkingPipeline | None = None,
         graph_builder: DependencyGraphBuilder | None = None,
         ai_analyzer: AIArchitectureAnalyzer | None = None,
+        technical_debt_analyzer: Any = None,
     ) -> None:
         """Initializes the AnalysisService with injected sub-services.
 
@@ -54,6 +55,7 @@ class AnalysisService:
             linking_pipeline: Optional SemanticLinkingPipeline override.
             graph_builder: Optional DependencyGraphBuilder override.
             ai_analyzer: Optional AIArchitectureAnalyzer override.
+            technical_debt_analyzer: Optional TechnicalDebtAnalysisEngine or AITechnicalDebtAnalyzer override.
         """
         self.workspace_manager = workspace_manager or WorkspaceManager()
         self.clone_service = clone_service or RepositoryCloneService()
@@ -63,6 +65,7 @@ class AnalysisService:
         self.linking_pipeline = linking_pipeline
         self.graph_builder = graph_builder
         self.ai_analyzer = ai_analyzer
+        self.technical_debt_analyzer = technical_debt_analyzer
 
     def analyze_repository(
         self,
@@ -109,12 +112,12 @@ class AnalysisService:
             parse_result = self.parsing_pipeline.parse_files(discovered_files)
 
             architecture_result = None
+            technical_debt_result = None
 
-            # Execute E2E architecture analysis pipeline when AI provider is passed
-            if ai_provider and ai_model_type:
-                if not self.ai_analyzer:
-                    raise ValueError("AIArchitectureAnalyzer dependency is required but was not injected.")
+            run_architecture = bool(ai_provider and ai_model_type and self.ai_analyzer)
+            run_tech_debt = self.technical_debt_analyzer is not None
 
+            if run_architecture or run_tech_debt:
                 # 1. Semantic Analysis
                 file_semantics = {}
                 for parsed_file in parse_result.files:
@@ -171,22 +174,61 @@ class AnalysisService:
                     graph=graph, semantic_context=sem_context
                 )
 
+                # Define Wrapper Context for Technical Debt rule resolution
+                class CombinedTechnicalDebtContext:
+                    def __init__(self, graph: Any, linked_sem: Any) -> None:
+                        self.graph = graph
+                        self.original_result = getattr(linked_sem, "original_result", None)
+                        self.reference_resolution_result = getattr(linked_sem, "reference_resolution_result", None)
+                        self.files = getattr(self.original_result, "files", {}) if self.original_result else {}
+                        self.resolved_references = getattr(self.reference_resolution_result, "resolved_references", []) if self.reference_resolution_result else []
+
+                td_context = CombinedTechnicalDebtContext(graph, linked_sem)
+
                 # 5. Execute AI Architecture Analyzer (runs rule engine & request pipeline)
-                architecture_result = self.ai_analyzer.analyze(
-                    project_name=str(project_id),
-                    context=combined_context,
-                    provider=ai_provider,
-                    model_type=ai_model_type,
-                    variables=variables,
-                    priority=priority,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
+                if run_architecture:
+                    architecture_result = self.ai_analyzer.analyze(
+                        project_name=str(project_id),
+                        context=combined_context,
+                        provider=ai_provider,
+                        model_type=ai_model_type,
+                        variables=variables,
+                        priority=priority,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                    )
+
+                # 6. Execute Technical Debt Analyzer or Engine
+                if run_tech_debt:
+                    from app.technical_debt.ai_analyzer import AITechnicalDebtAnalyzer
+                    if isinstance(self.technical_debt_analyzer, AITechnicalDebtAnalyzer):
+                        if ai_provider and ai_model_type:
+                            technical_debt_result = self.technical_debt_analyzer.analyze(
+                                project_name=str(project_id),
+                                context=td_context,
+                                provider=ai_provider,
+                                model_type=ai_model_type,
+                                variables=variables,
+                                priority=priority,
+                                temperature=temperature,
+                                max_tokens=max_tokens,
+                            )
+                        else:
+                            technical_debt_result = self.technical_debt_analyzer.analysis_engine.analyze(
+                                project_name=str(project_id),
+                                context=td_context,
+                            )
+                    else:
+                        technical_debt_result = self.technical_debt_analyzer.analyze(
+                            project_name=str(project_id),
+                            context=td_context,
+                        )
             
             return AnalysisResult(
                 scan_result=scan_result,
                 parse_result=parse_result,
                 architecture_result=architecture_result,
+                technical_debt_result=technical_debt_result,
             )
         finally:
             try:
