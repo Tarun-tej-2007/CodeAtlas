@@ -8,6 +8,9 @@ from app.reporting.registry import ReportGeneratorRegistry
 from app.reporting.engine import ReportCompilationEngine
 from app.reporting.exporters import JSONReportExporter, MarkdownReportExporter, HTMLReportExporter
 from app.reporting.comparison import ReportSectionDifference, ReportComparison, ReportComparisonEngine
+from app.reporting.context_builder import ReportAIContextBuilder
+from app.reporting.prompt_templates import ReportingPromptTemplates
+from app.reporting.ai_analyzer import AIReportAnalysisResult, AIReportAnalyzer
 
 __all__ = [
     "ReportFormat",
@@ -26,4 +29,8 @@ __all__ = [
     "ReportSectionDifference",
     "ReportComparison",
     "ReportComparisonEngine",
+    "ReportAIContextBuilder",
+    "ReportingPromptTemplates",
+    "AIReportAnalysisResult",
+    "AIReportAnalyzer",
 ]
