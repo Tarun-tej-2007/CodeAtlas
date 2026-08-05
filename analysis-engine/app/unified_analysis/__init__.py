@@ -8,6 +8,7 @@ from app.unified_analysis.contributor import UnifiedAnalysisContributor
 from app.unified_analysis.registry import UnifiedAnalysisRegistry
 from app.unified_analysis.engine import UnifiedAnalysisEngine
 from app.unified_analysis.context_builder import UnifiedAIContextBuilder
+from app.unified_analysis.prompt_templates import UnifiedAnalysisPromptTemplates
 
 __all__ = [
     "AnalysisStatus",
@@ -19,4 +20,5 @@ __all__ = [
     "UnifiedAnalysisRegistry",
     "UnifiedAnalysisEngine",
     "UnifiedAIContextBuilder",
+    "UnifiedAnalysisPromptTemplates",
 ]
