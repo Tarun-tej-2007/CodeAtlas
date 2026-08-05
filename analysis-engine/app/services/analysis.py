@@ -44,6 +44,8 @@ class AnalysisService:
         ai_analyzer: AIArchitectureAnalyzer | None = None,
         technical_debt_analyzer: Any = None,
         unified_analysis_analyzer: Any = None,
+        report_generator: Any = None,
+        ai_report_analyzer: Any = None,
     ) -> None:
         """Initializes the AnalysisService with injected sub-services.
 
@@ -58,6 +60,8 @@ class AnalysisService:
             ai_analyzer: Optional AIArchitectureAnalyzer override.
             technical_debt_analyzer: Optional TechnicalDebtAnalysisEngine or AITechnicalDebtAnalyzer override.
             unified_analysis_analyzer: Optional UnifiedAnalysisEngine override.
+            report_generator: Optional ReportGenerator override.
+            ai_report_analyzer: Optional AIReportAnalyzer override.
         """
         self.workspace_manager = workspace_manager or WorkspaceManager()
         self.clone_service = clone_service or RepositoryCloneService()
@@ -69,6 +73,8 @@ class AnalysisService:
         self.ai_analyzer = ai_analyzer
         self.technical_debt_analyzer = technical_debt_analyzer
         self.unified_analysis_analyzer = unified_analysis_analyzer
+        self.report_generator = report_generator
+        self.ai_report_analyzer = ai_report_analyzer
 
     def analyze_repository(
         self,
@@ -277,12 +283,72 @@ class AnalysisService:
                         context=unified_context,
                     )
             
+            # 8. Execute Report generation if configured
+            report_result = None
+            if self.report_generator is not None:
+                from app.reporting.enums import ReportFormat
+                fmt = ReportFormat.JSON
+                if variables and "report_format" in variables:
+                    val = variables["report_format"]
+                    if isinstance(val, ReportFormat):
+                        fmt = val
+                    elif isinstance(val, str):
+                        try:
+                            fmt = ReportFormat(val.lower())
+                        except ValueError:
+                            pass
+
+                # Compile context structure containing already-computed outputs
+                class ReportCompilationContext:
+                    def __init__(
+                        self,
+                        scan_res: Any,
+                        parse_res: Any,
+                        arch_res: Any,
+                        tech_res: Any,
+                        unified_res: Any,
+                    ) -> None:
+                        self.scan_result = scan_res
+                        self.parse_result = parse_res
+                        self.architecture_result = arch_res
+                        self.technical_debt_result = tech_res
+                        self.unified_result = unified_res
+                        self.metadata = {}
+
+                report_context = ReportCompilationContext(
+                    scan_res=scan_result,
+                    parse_res=parse_result,
+                    arch_res=architecture_result,
+                    tech_res=technical_debt_result,
+                    unified_res=unified_result,
+                )
+
+                compiled_report = self.report_generator.generate(
+                    project_name=str(project_id),
+                    context=report_context,
+                    format=fmt,
+                )
+
+                if self.ai_report_analyzer is not None and ai_provider and ai_model_type:
+                    report_result = self.ai_report_analyzer.analyze(
+                        report=compiled_report,
+                        provider=ai_provider,
+                        model_type=ai_model_type,
+                        variables=variables,
+                        priority=priority,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                    )
+                else:
+                    report_result = compiled_report
+            
             return AnalysisResult(
                 scan_result=scan_result,
                 parse_result=parse_result,
                 architecture_result=architecture_result,
                 technical_debt_result=technical_debt_result,
                 unified_result=unified_result,
+                report_result=report_result,
             )
         finally:
             try:

@@ -31,6 +31,7 @@ class AnalysisResponse(BaseModel):
     project_id: uuid.UUID = Field(..., description="Unique ID of the project workspace.")
     repository_url: str = Field(..., description="Git clone URL of the repository.")
     unified_result: Optional[Any] = Field(default=None, description="Unified Analysis output DTO/report.")
+    report_result: Optional[Any] = Field(default=None, description="Compiled report DTO/result.")
 
 
 class ErrorDetails(BaseModel):
