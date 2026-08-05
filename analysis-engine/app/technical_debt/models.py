@@ -80,6 +80,14 @@ class TechnicalDebtReport(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    @field_validator("project_name", mode="after")
+    @classmethod
+    def validate_non_empty_project_name(cls, v: str) -> str:
+        """Asserts that project_name is not empty or whitespace-only."""
+        if not v.strip():
+            raise ValueError("project_name must not be empty or whitespace-only.")
+        return v
+
     @field_validator("generated_at", mode="after")
     @classmethod
     def validate_utc_timestamp(cls, v: datetime) -> datetime:
