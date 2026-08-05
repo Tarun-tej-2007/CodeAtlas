@@ -4,6 +4,8 @@ from app.unified_analysis.enums import AnalysisStatus
 from app.unified_analysis.exceptions import UnifiedAnalysisError, UnifiedAnalysisAggregationError
 from app.unified_analysis.models import UnifiedAnalysisReport
 from app.unified_analysis.analyzer import UnifiedAnalysisAnalyzer
+from app.unified_analysis.contributor import UnifiedAnalysisContributor
+from app.unified_analysis.registry import UnifiedAnalysisRegistry
 
 __all__ = [
     "AnalysisStatus",
@@ -11,4 +13,6 @@ __all__ = [
     "UnifiedAnalysisAggregationError",
     "UnifiedAnalysisReport",
     "UnifiedAnalysisAnalyzer",
+    "UnifiedAnalysisContributor",
+    "UnifiedAnalysisRegistry",
 ]
