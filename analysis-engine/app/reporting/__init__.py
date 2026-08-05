@@ -7,6 +7,7 @@ from app.reporting.generator import ReportGenerator
 from app.reporting.registry import ReportGeneratorRegistry
 from app.reporting.engine import ReportCompilationEngine
 from app.reporting.exporters import JSONReportExporter, MarkdownReportExporter, HTMLReportExporter
+from app.reporting.comparison import ReportSectionDifference, ReportComparison, ReportComparisonEngine
 
 __all__ = [
     "ReportFormat",
@@ -22,4 +23,7 @@ __all__ = [
     "JSONReportExporter",
     "MarkdownReportExporter",
     "HTMLReportExporter",
+    "ReportSectionDifference",
+    "ReportComparison",
+    "ReportComparisonEngine",
 ]
