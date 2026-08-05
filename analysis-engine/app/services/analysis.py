@@ -43,6 +43,7 @@ class AnalysisService:
         graph_builder: DependencyGraphBuilder | None = None,
         ai_analyzer: AIArchitectureAnalyzer | None = None,
         technical_debt_analyzer: Any = None,
+        unified_analysis_analyzer: Any = None,
     ) -> None:
         """Initializes the AnalysisService with injected sub-services.
 
@@ -56,6 +57,7 @@ class AnalysisService:
             graph_builder: Optional DependencyGraphBuilder override.
             ai_analyzer: Optional AIArchitectureAnalyzer override.
             technical_debt_analyzer: Optional TechnicalDebtAnalysisEngine or AITechnicalDebtAnalyzer override.
+            unified_analysis_analyzer: Optional UnifiedAnalysisEngine override.
         """
         self.workspace_manager = workspace_manager or WorkspaceManager()
         self.clone_service = clone_service or RepositoryCloneService()
@@ -66,6 +68,7 @@ class AnalysisService:
         self.graph_builder = graph_builder
         self.ai_analyzer = ai_analyzer
         self.technical_debt_analyzer = technical_debt_analyzer
+        self.unified_analysis_analyzer = unified_analysis_analyzer
 
     def analyze_repository(
         self,
@@ -223,12 +226,44 @@ class AnalysisService:
                             project_name=str(project_id),
                             context=td_context,
                         )
+
+            # 7. Execute Unified Analysis if configured
+            unified_result = None
+            if self.unified_analysis_analyzer is not None:
+                class UnifiedAnalysisContext:
+                    def __init__(
+                        self,
+                        scan_res: Any,
+                        parse_res: Any,
+                        arch_res: Any,
+                        tech_res: Any,
+                    ) -> None:
+                        self.scan_result = scan_res
+                        self.parse_result = parse_res
+                        self.architecture_result = arch_res
+                        self.technical_debt_result = tech_res
+
+                    def get(self, key: str, default: Any = None) -> Any:
+                        return getattr(self, key, default)
+
+                unified_context = UnifiedAnalysisContext(
+                    scan_res=scan_result,
+                    parse_res=parse_result,
+                    arch_res=architecture_result,
+                    tech_res=technical_debt_result,
+                )
+
+                unified_result = self.unified_analysis_analyzer.analyze(
+                    project_name=str(project_id),
+                    context=unified_context,
+                )
             
             return AnalysisResult(
                 scan_result=scan_result,
                 parse_result=parse_result,
                 architecture_result=architecture_result,
                 technical_debt_result=technical_debt_result,
+                unified_result=unified_result,
             )
         finally:
             try:

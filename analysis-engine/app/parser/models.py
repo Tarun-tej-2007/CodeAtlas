@@ -42,6 +42,7 @@ class AnalysisResult(BaseModel):
     parse_result: ParseResult
     architecture_result: Optional[Any] = Field(default=None, description="Optional AI architecture analysis integration result.")
     technical_debt_result: Optional[Any] = Field(default=None, description="Optional Technical Debt analysis integration result.")
+    unified_result: Optional[Any] = Field(default=None, description="Optional Unified analysis aggregation result.")
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
