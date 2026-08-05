@@ -4,6 +4,7 @@ from app.reporting.enums import ReportFormat, ReportSection
 from app.reporting.exceptions import ReportingError, ReportGenerationError
 from app.reporting.models import ReportSectionContent, ReportMetadata, AnalysisReport
 from app.reporting.generator import ReportGenerator
+from app.reporting.registry import ReportGeneratorRegistry
 
 __all__ = [
     "ReportFormat",
@@ -14,4 +15,5 @@ __all__ = [
     "ReportMetadata",
     "AnalysisReport",
     "ReportGenerator",
+    "ReportGeneratorRegistry",
 ]
