@@ -33,6 +33,7 @@ class AnalysisResponse(BaseModel):
     unified_result: Optional[Any] = Field(default=None, description="Unified Analysis output DTO/report.")
     report_result: Optional[Any] = Field(default=None, description="Compiled report DTO/result.")
     # Integrates with persistence workflow
+    dashboard_result: Optional[Any] = Field(default=None, description="Compiled dashboard DTO/result.")
 
 
 class ErrorDetails(BaseModel):
