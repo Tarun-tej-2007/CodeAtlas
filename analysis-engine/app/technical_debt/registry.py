@@ -22,6 +22,8 @@ class TechnicalDebtRuleRegistry:
         """
         if rule is None:
             raise TechnicalDebtRuleError("Cannot register None rule.")
+        if not isinstance(rule, TechnicalDebtRule):
+            raise TechnicalDebtRuleError("Registered object must inherit from TechnicalDebtRule.")
         if not hasattr(rule, "rule_id") or not rule.rule_id:
             raise TechnicalDebtRuleError("Rule must possess a non-empty 'rule_id'.")
 

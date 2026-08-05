@@ -17,6 +17,9 @@ class TechnicalDebtAIContextBuilder:
 
     def build_context(self, report: TechnicalDebtReport) -> AIContext:
         """Translates a TechnicalDebtReport into an immutable, structured AIContext."""
+        if report is None:
+            raise ValueError("TechnicalDebtReport input must not be None.")
+
         # 1. Compile Metadata Map
         weighted_score = report.summary.metadata.get("weighted_overall_score", 0.0)
 
