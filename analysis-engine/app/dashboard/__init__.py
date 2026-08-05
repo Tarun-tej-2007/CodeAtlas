@@ -4,6 +4,7 @@ from app.dashboard.enums import DashboardWidgetType, DashboardStatus
 from app.dashboard.exceptions import DashboardError, DashboardValidationError
 from app.dashboard.models import DashboardMetadata, DashboardWidget, DashboardModel
 from app.dashboard.dashboard import DashboardView
+from app.dashboard.registry import DashboardWidgetRegistry
 
 __all__ = [
     "DashboardWidgetType",
@@ -14,4 +15,5 @@ __all__ = [
     "DashboardWidget",
     "DashboardModel",
     "DashboardView",
+    "DashboardWidgetRegistry",
 ]
