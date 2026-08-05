@@ -28,7 +28,7 @@ async def submit_analysis(
     run_sync: bool = False,
     analysis_service: AnalysisService = Depends(get_analysis_service),
 ) -> AnalysisResponse:
-    """Accepts a repository URL and project ID, registering an analysis job."""
+    """Accepts a repository URL and project ID, registering an analysis job. Integrates with reporting & persistence."""
     req_id = x_request_id or str(uuid.uuid4())
     response.headers["X-Request-ID"] = req_id
     

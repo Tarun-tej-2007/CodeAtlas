@@ -32,6 +32,7 @@ class AnalysisResponse(BaseModel):
     repository_url: str = Field(..., description="Git clone URL of the repository.")
     unified_result: Optional[Any] = Field(default=None, description="Unified Analysis output DTO/report.")
     report_result: Optional[Any] = Field(default=None, description="Compiled report DTO/result.")
+    # Integrates with persistence workflow
 
 
 class ErrorDetails(BaseModel):
