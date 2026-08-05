@@ -20,8 +20,14 @@ class UnifiedAnalysisEngine(UnifiedAnalysisAnalyzer):
 
     def analyze(self, *, project_name: str, context: Any, **kwargs) -> UnifiedAnalysisReport:
         """Executes registered contributors sequentially and compiles a UnifiedAnalysisReport."""
-        if not project_name or not project_name.strip():
+        if project_name is None:
+            raise ValueError("project_name must not be None.")
+        if not isinstance(project_name, str):
+            raise TypeError("project_name must be a string.")
+        if not project_name.strip():
             raise ValueError("project_name must be a non-empty string.")
+        if context is None:
+            raise ValueError("context must not be None.")
 
         contributors = self.registry.list_contributors()
         results: Dict[str, Any] = {}
