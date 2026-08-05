@@ -71,6 +71,26 @@ class AIUnifiedAnalyzer(UnifiedAnalysisAnalyzer):
         **kwargs,
     ) -> UnifiedAIAnalysisResult:
         """Runs the unified analysis pipeline and query execution flow."""
+        if project_name is None:
+            raise ValueError("project_name must not be None.")
+        if not isinstance(project_name, str):
+            raise TypeError("project_name must be a string.")
+        if not project_name.strip():
+            raise ValueError("project_name must be a non-empty string.")
+        if context is None:
+            raise ValueError("context must not be None.")
+        if provider is None:
+            raise ValueError("provider must not be None.")
+        if not isinstance(provider, AIProvider):
+            raise TypeError("provider must be an instance of AIProvider.")
+        if model_type is None:
+            raise ValueError("model_type must not be None.")
+        if not isinstance(model_type, AIModelType):
+            raise TypeError("model_type must be an instance of AIModelType.")
+        if priority is None:
+            raise ValueError("priority must not be None.")
+        if not isinstance(priority, RequestPriority):
+            raise TypeError("priority must be an instance of RequestPriority.")
         # 1. Execute UnifiedAnalysisEngine
         report = self.engine.analyze(project_name=project_name, context=context, **kwargs)
 
