@@ -5,6 +5,7 @@ from app.dashboard.exceptions import DashboardError, DashboardValidationError
 from app.dashboard.models import DashboardMetadata, DashboardWidget, DashboardModel
 from app.dashboard.dashboard import DashboardView
 from app.dashboard.registry import DashboardWidgetRegistry
+from app.dashboard.engine import DashboardAggregationEngine
 
 __all__ = [
     "DashboardWidgetType",
@@ -16,4 +17,5 @@ __all__ = [
     "DashboardModel",
     "DashboardView",
     "DashboardWidgetRegistry",
+    "DashboardAggregationEngine",
 ]
