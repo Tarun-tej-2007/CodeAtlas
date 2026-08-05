@@ -5,6 +5,7 @@ from app.reporting.exceptions import ReportingError, ReportGenerationError
 from app.reporting.models import ReportSectionContent, ReportMetadata, AnalysisReport
 from app.reporting.generator import ReportGenerator
 from app.reporting.registry import ReportGeneratorRegistry
+from app.reporting.engine import ReportCompilationEngine
 
 __all__ = [
     "ReportFormat",
@@ -16,4 +17,5 @@ __all__ = [
     "AnalysisReport",
     "ReportGenerator",
     "ReportGeneratorRegistry",
+    "ReportCompilationEngine",
 ]
