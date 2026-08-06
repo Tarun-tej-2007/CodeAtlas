@@ -2,7 +2,7 @@
 
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from app.evolution.models import (
     ArchitecturalChange,
@@ -89,4 +89,28 @@ class EvolutionPersistence(ABC):
         Returns:
             The stored ArchitectureSnapshot DTO or None.
         """
+        pass
+
+
+class ArchitectureAnalysisProvider(ABC):
+    """Abstract interface defining the retrieval boundary for codebase analysis reports."""
+
+    @abstractmethod
+    def get_dependency_graph(self, commit_id: str) -> Optional[Any]:
+        """Retrieves the DependencyGraph compiled for the target commit."""
+        pass
+
+    @abstractmethod
+    def get_architecture_result(self, commit_id: str) -> Optional[Any]:
+        """Retrieves the ArchitectureAnalysisResult compiled for the target commit."""
+        pass
+
+    @abstractmethod
+    def get_quality_report(self, commit_id: str) -> Optional[Any]:
+        """Retrieves the QualityReport compiled for the target commit."""
+        pass
+
+    @abstractmethod
+    def get_technical_debt_report(self, commit_id: str) -> Optional[Any]:
+        """Retrieves the TechnicalDebtReport compiled for the target commit."""
         pass
