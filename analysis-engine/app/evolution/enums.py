@@ -18,3 +18,12 @@ class ArchitecturalChangeType(str, Enum):
     REMOVED = "removed"
     MODIFIED = "modified"
     UNCHANGED = "unchanged"
+
+
+class RiskSeverity(str, Enum):
+    """Represents the severity level classification of an identified architectural risk."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
