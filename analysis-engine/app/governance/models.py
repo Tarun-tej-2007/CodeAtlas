@@ -296,3 +296,72 @@ class GovernanceViolationReport(BaseModel):
     def serialize_mappings(self, value: Any) -> dict:
         """Ensures serialization compatibility with mapping proxy classes."""
         return dict(value)
+
+
+class ComplianceScore(BaseModel):
+    """Immutable model representing parsed architecture compliance metrics scoring results."""
+
+    score_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique score tracking ID.")
+    overall_score: float = Field(..., ge=0.0, le=100.0, description="Aggregated overall compliance score value.")
+    category_scores: Mapping[str, float] = Field(
+        default_factory=dict, description="Compliance scores mapped by policy category."
+    )
+    repository_score: float = Field(..., ge=0.0, le=100.0, description="Overall repository structural score.")
+    trend_adjustment: float = Field(default=0.0, description="Score offset adjustment based on historical evolution trends.")
+    policy_coverage: float = Field(..., ge=0.0, le=100.0, description="Percentage of policy rules covered.")
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("category_scores", mode="after")
+    @classmethod
+    def freeze_category_scores(cls, v: Any) -> Any:
+        """Enforces runtime read-only dictionary views on category_scores mapping."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("category_scores")
+    def serialize_category_scores(self, category_scores: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(category_scores)
+
+
+class ComplianceReport(BaseModel):
+    """Immutable representation of a complete architecture governance compliance report."""
+
+    report_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique report tracking ID.")
+    project_id: uuid.UUID = Field(..., description="Associated project scope identifier.")
+    commit_id: str = Field(..., min_length=1, description="Associated Git commit hash.")
+    generated_at: datetime = Field(..., description="Timezone-aware UTC timestamp when report was generated.")
+    compliance_score: ComplianceScore = Field(..., description="Calculated compliance score DTO.")
+    violation_report_id: uuid.UUID = Field(..., description="Unique identifier of associated violations report.")
+    extra_info: Mapping[str, Any] = Field(
+        default_factory=dict, description="Extensible metadata properties map."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("commit_id", mode="after")
+    @classmethod
+    def validate_commit_id_non_empty(cls, v: str) -> str:
+        """Validates that commit hash value is not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("commit_id must be a non-empty string.")
+        return v
+
+    @field_validator("generated_at", mode="after")
+    @classmethod
+    def validate_generated_at_timezone(cls, v: datetime) -> datetime:
+        """Ensures creation timestamp is timezone-aware UTC."""
+        if v.tzinfo is None or v.tzinfo != timezone.utc:
+            raise ValueError("generated_at must be a timezone-aware UTC datetime.")
+        return v
+
+    @field_validator("extra_info", mode="after")
+    @classmethod
+    def freeze_extra_info(cls, v: Any) -> Any:
+        """Enforces immutable view protection on extra_info mapping."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("extra_info")
+    def serialize_extra_info(self, extra_info: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(extra_info)
