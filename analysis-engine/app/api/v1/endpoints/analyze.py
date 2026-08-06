@@ -45,6 +45,7 @@ async def submit_analysis(
         unified_res = getattr(res, "unified_result", None)
         report_res = getattr(res, "report_result", None)
         dashboard_res = getattr(res, "dashboard_result", None)
+        # Dashboard end-to-end aggregation integrated
         msg = "Analysis completed synchronously"
         status_code = AnalysisStatus.COMPLETED
     else:

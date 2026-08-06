@@ -34,6 +34,7 @@ class AnalysisResponse(BaseModel):
     report_result: Optional[Any] = Field(default=None, description="Compiled report DTO/result.")
     # Integrates with persistence workflow
     dashboard_result: Optional[Any] = Field(default=None, description="Compiled dashboard DTO/result.")
+    # Integrates with dashboard end-to-end workflow
 
 
 class ErrorDetails(BaseModel):

@@ -48,6 +48,8 @@ class AnalysisService:
         ai_report_analyzer: Any = None,
         report_persistence_service: Any = None,
         dashboard_engine: Any = None,
+        ai_dashboard_analyzer: Any = None,
+        dashboard_persistence_service: Any = None,
     ) -> None:
         """Initializes the AnalysisService with injected sub-services.
 
@@ -66,6 +68,8 @@ class AnalysisService:
             ai_report_analyzer: Optional AIReportAnalyzer override.
             report_persistence_service: Optional ReportPersistenceService override.
             dashboard_engine: Optional DashboardAggregationEngine override.
+            ai_dashboard_analyzer: Optional AIDashboardAnalyzer override.
+            dashboard_persistence_service: Optional DashboardPersistenceService override.
         """
         self.workspace_manager = workspace_manager or WorkspaceManager()
         self.clone_service = clone_service or RepositoryCloneService()
@@ -81,6 +85,8 @@ class AnalysisService:
         self.ai_report_analyzer = ai_report_analyzer
         self.report_persistence_service = report_persistence_service
         self.dashboard_engine = dashboard_engine
+        self.ai_dashboard_analyzer = ai_dashboard_analyzer
+        self.dashboard_persistence_service = dashboard_persistence_service
 
     def analyze_repository(
         self,
@@ -385,10 +391,25 @@ class AnalysisService:
                     report_res=report_result,
                 )
 
-                dashboard_result = self.dashboard_engine.compile(
-                    project_name=str(project_id),
-                    context=dashboard_context,
-                )
+                if self.ai_dashboard_analyzer is not None and ai_provider and ai_model_type:
+                    dashboard_result = self.ai_dashboard_analyzer.analyze(
+                        project_name=str(project_id),
+                        context=dashboard_context,
+                        provider=ai_provider,
+                        model_type=ai_model_type,
+                        variables=variables,
+                        priority=priority,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                    )
+                else:
+                    dashboard_result = self.dashboard_engine.compile(
+                        project_name=str(project_id),
+                        context=dashboard_context,
+                    )
+
+                if self.dashboard_persistence_service is not None and dashboard_result is not None:
+                    self.dashboard_persistence_service.save_dashboard(dashboard_result)
             
             return AnalysisResult(
                 scan_result=scan_result,
