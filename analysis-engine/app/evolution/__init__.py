@@ -6,6 +6,7 @@ from app.evolution.interfaces import (
     ArchitectureSnapshotCalculator,
     EvolutionDifferenceEngine,
     EvolutionPersistence,
+    ArchitectureAnalysisProvider,
 )
 from app.evolution.models import (
     ArchitecturalChange,
@@ -15,6 +16,7 @@ from app.evolution.models import (
     EvolutionResult,
     EvolutionSummary,
 )
+from app.evolution.snapshot_builder import ArchitectureSnapshotService
 
 __all__ = [
     "ArchitecturalChangeType",
@@ -24,10 +26,12 @@ __all__ = [
     "ArchitectureSnapshotCalculator",
     "EvolutionDifferenceEngine",
     "EvolutionPersistence",
+    "ArchitectureAnalysisProvider",
     "ArchitecturalChange",
     "ArchitectureSnapshot",
     "EvolutionMetadata",
     "EvolutionRequest",
     "EvolutionResult",
     "EvolutionSummary",
+    "ArchitectureSnapshotService",
 ]
