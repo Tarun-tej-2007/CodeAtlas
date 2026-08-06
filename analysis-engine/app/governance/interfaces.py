@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 
 from app.governance.models import (
+    ComplianceReport,
+    ComplianceScore,
     EnrichedViolation,
     GovernancePolicy,
     GovernanceResult,
@@ -12,6 +14,30 @@ from app.governance.models import (
     PolicyRule,
     PolicyViolation,
 )
+
+
+class ComplianceScorer(ABC):
+    """Abstract interface defining compliance scoring computations."""
+
+    @abstractmethod
+    def calculate_compliance(
+        self,
+        violation_report: GovernanceViolationReport,
+        history: Optional[Tuple[Any, ...]] = None,
+    ) -> ComplianceReport:
+        """Computes compliance metrics scoring from the GovernanceViolationReport.
+
+        Args:
+            violation_report: Enriched GovernanceViolationReport input.
+            history: Optional trailing historical trend context list to adjust score.
+
+        Returns:
+            The compiled ComplianceReport DTO.
+
+        Raises:
+            GovernanceValidationError: If validation checks fail.
+        """
+        pass
 
 
 class ViolationAnalyzer(ABC):

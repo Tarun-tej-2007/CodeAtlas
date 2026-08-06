@@ -7,7 +7,7 @@ from app.governance.exceptions import (
     GovernanceValidationError,
     PolicyEvaluationError,
 )
-from app.governance.interfaces import GovernancePersistence, PolicyRuleEvaluator, ViolationAnalyzer
+from app.governance.interfaces import GovernancePersistence, PolicyRuleEvaluator, ViolationAnalyzer, ComplianceScorer
 from app.governance.models import (
     GovernancePolicy,
     GovernanceRequest,
@@ -18,10 +18,13 @@ from app.governance.models import (
     PolicyViolation,
     EnrichedViolation,
     GovernanceViolationReport,
+    ComplianceScore,
+    ComplianceReport,
 )
 from app.governance.policy_definition import PolicyDefinitionService
 from app.governance.policy_evaluation import PolicyEvaluationService
 from app.governance.violation_analyzer import GovernanceViolationAnalyzer
+from app.governance.compliance_scoring import ComplianceScoringService
 
 __all__ = [
     "PolicyCategory",
@@ -35,6 +38,7 @@ __all__ = [
     "PolicyRuleEvaluator",
     "GovernancePersistence",
     "ViolationAnalyzer",
+    "ComplianceScorer",
     "PolicyMetadata",
     "PolicyRule",
     "GovernancePolicy",
@@ -44,7 +48,10 @@ __all__ = [
     "GovernanceResult",
     "EnrichedViolation",
     "GovernanceViolationReport",
+    "ComplianceScore",
+    "ComplianceReport",
     "PolicyDefinitionService",
     "PolicyEvaluationService",
     "GovernanceViolationAnalyzer",
+    "ComplianceScoringService",
 ]
