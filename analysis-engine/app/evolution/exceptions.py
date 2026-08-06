@@ -11,3 +11,9 @@ class EvolutionValidationError(EvolutionError):
     """Raised when request payload or model properties fail validation rules."""
 
     pass
+
+
+class EvolutionPersistenceError(EvolutionError):
+    """Raised when repository storage query or write operations encounter database errors."""
+
+    pass

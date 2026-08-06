@@ -98,6 +98,26 @@ class EvolutionPersistence(ABC):
         """Retrieves all stored EvolutionResult instances."""
         pass
 
+    @abstractmethod
+    def save_trend(self, trend_id: uuid.UUID, trend: EvolutionTrendResult) -> None:
+        """Persists the EvolutionTrendResult object."""
+        pass
+
+    @abstractmethod
+    def get_trend(self, trend_id: uuid.UUID) -> Optional[EvolutionTrendResult]:
+        """Retrieves the EvolutionTrendResult object by identifier."""
+        pass
+
+    @abstractmethod
+    def save_risk_report(self, report_id: uuid.UUID, report: ArchitecturalRiskReport) -> None:
+        """Persists the ArchitecturalRiskReport object."""
+        pass
+
+    @abstractmethod
+    def get_risk_report(self, report_id: uuid.UUID) -> Optional[ArchitecturalRiskReport]:
+        """Retrieves the ArchitecturalRiskReport object by identifier."""
+        pass
+
 
 class ArchitectureAnalysisProvider(ABC):
     """Abstract interface defining the retrieval boundary for codebase analysis reports."""
