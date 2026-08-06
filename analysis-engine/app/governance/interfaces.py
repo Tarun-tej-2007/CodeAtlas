@@ -230,6 +230,57 @@ class GovernancePersistence(ABC):
         """
         pass
 
+    @abstractmethod
+    def list_policies(self) -> Tuple[GovernancePolicy, ...]:
+        """Lists all registered governance policies.
+
+        Returns:
+            An immutable tuple of GovernancePolicy objects.
+
+        Raises:
+            GovernancePersistenceError: If repository query fails.
+        """
+        pass
+
+    @abstractmethod
+    def update_policy(self, policy: GovernancePolicy) -> None:
+        """Updates an existing governance policy.
+
+        Args:
+            policy: The updated GovernancePolicy domain object.
+
+        Raises:
+            GovernancePersistenceError: If repository update fails.
+        """
+        pass
+
+    @abstractmethod
+    def save_analysis_result(self, result: GovernanceAnalysisResult) -> None:
+        """Saves a complete governance analysis result containing reports and scores.
+
+        Args:
+            result: Immutable GovernanceAnalysisResult domain object.
+
+        Raises:
+            GovernancePersistenceError: If repository write fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_analysis_result(self, result_id: uuid.UUID) -> Optional[GovernanceAnalysisResult]:
+        """Retrieves a complete governance analysis result by its unique identifier.
+
+        Args:
+            result_id: Unique analysis result identifier.
+
+        Returns:
+            GovernanceAnalysisResult if found, else None.
+
+        Raises:
+            GovernancePersistenceError: If repository query fails.
+        """
+        pass
+
 
 class GovernanceOrchestrator(ABC):
     """Abstract interface defining the orchestration of governance evaluations."""

@@ -33,6 +33,7 @@ from app.governance.policy_evaluation import PolicyEvaluationService
 from app.governance.violation_analyzer import GovernanceViolationAnalyzer
 from app.governance.compliance_scoring import ComplianceScoringService
 from app.governance.service import GovernanceService
+from app.governance.persistence import GovernanceRepository, GovernancePersistenceService
 
 __all__ = [
     "PolicyCategory",
@@ -65,5 +66,7 @@ __all__ = [
     "GovernanceViolationAnalyzer",
     "ComplianceScoringService",
     "GovernanceService",
+    "GovernanceRepository",
+    "GovernancePersistenceService",
 ]
 
