@@ -32,6 +32,13 @@ class ArchitectureEvolutionDifferenceEngine(EvolutionDifferenceEngine):
         if not isinstance(old_snapshot, ArchitectureSnapshot) or not isinstance(new_snapshot, ArchitectureSnapshot):
             raise EvolutionValidationError("Snapshots must be valid ArchitectureSnapshot instances.")
 
+        from app.evolution.cache import execution_cache
+        cache = execution_cache.get()
+        if cache is not None:
+            diff_key = f"diff:{old_snapshot.commit_id}:{new_snapshot.commit_id}"
+            if diff_key in cache:
+                return cache[diff_key]
+
         changes: List[ArchitecturalChange] = []
 
         # 1. Compare modules inventory
@@ -310,4 +317,8 @@ class ArchitectureEvolutionDifferenceEngine(EvolutionDifferenceEngine):
         # 7. Sort changes alphabetically by component_name and change_type value for absolute determinism
         changes.sort(key=lambda c: (c.component_name, c.change_type.value))
 
-        return tuple(changes)
+        res_tuple = tuple(changes)
+        if cache is not None:
+            diff_key = f"diff:{old_snapshot.commit_id}:{new_snapshot.commit_id}"
+            cache[diff_key] = res_tuple
+        return res_tuple

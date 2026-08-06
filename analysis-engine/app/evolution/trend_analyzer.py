@@ -29,6 +29,14 @@ class ArchitecturalTrendAnalyzer(TrendAnalyzer):
         if history is None:
             raise EvolutionValidationError("History collection parameter must not be None.")
 
+        from app.evolution.cache import execution_cache
+        cache = execution_cache.get()
+        if cache is not None:
+            history_key = ",".join(res.metadata.target_commit for res in history if res is not None)
+            cache_key = f"trends:{history_key}:{window_size}"
+            if cache_key in cache:
+                return cache[cache_key]
+
         # 1. Filter out adjacent duplicate target commits
         filtered_history: List[EvolutionResult] = []
         for res in history:
@@ -158,7 +166,7 @@ class ArchitecturalTrendAnalyzer(TrendAnalyzer):
             "module_growth": get_direction(module_counts),
         }
 
-        return EvolutionTrendResult(
+        trend_result = EvolutionTrendResult(
             coupling_trend=tuple(coupling_vals),
             complexity_trend=tuple(complexity_vals),
             tech_debt_trend=tuple(tech_debt_vals),
@@ -167,3 +175,8 @@ class ArchitecturalTrendAnalyzer(TrendAnalyzer):
             module_growth=tuple(module_counts),
             summary=summary,
         )
+        if cache is not None:
+            history_key = ",".join(res.metadata.target_commit for res in history if res is not None)
+            cache_key = f"trends:{history_key}:{window_size}"
+            cache[cache_key] = trend_result
+        return trend_result
