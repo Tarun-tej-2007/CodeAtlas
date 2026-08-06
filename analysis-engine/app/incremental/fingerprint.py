@@ -56,23 +56,46 @@ class SHA256FingerprintGenerator(FingerprintGenerator):
         else:
             norm_path = target_path.name
 
-        try:
-            # 1. Hashing using buffered reader
-            sha256_hash = self._calculate_sha256(target_path)
+        from app.incremental.cache import execution_cache
 
-            # 2. File size metadata
+        # Check execution cache first to avoid duplicate fingerprint generation in the same run
+        cache = execution_cache.get()
+        if cache is not None:
+            cache_key = f"fp:{norm_path}"
+            if cache_key in cache:
+                return cache[cache_key]
+
+        try:
             stat_info = target_path.stat()
             size = stat_info.st_size
-
-            # 3. UTC timezone-aware last modified timestamp
             mtime_utc = datetime.fromtimestamp(stat_info.st_mtime, tz=timezone.utc)
 
-            return FileFingerprint(
+            # Check if we can reuse previously computed immutable hash from previous snapshot
+            sha256_hash = None
+            if cache is not None and "previous_snapshot" in cache:
+                prev_snap: RepositorySnapshot = cache["previous_snapshot"]
+                if norm_path in prev_snap.fingerprints:
+                    prev_fp = prev_snap.fingerprints[norm_path]
+                    # Compare mtime and size. If they match exactly, we can safely reuse the hash
+                    if prev_fp.size == size and prev_fp.last_modified == mtime_utc:
+                        sha256_hash = prev_fp.hash
+
+            # Calculate hash only if it could not be safely reused
+            if sha256_hash is None:
+                sha256_hash = self._calculate_sha256(target_path)
+
+            fp = FileFingerprint(
                 path=norm_path,
                 hash=sha256_hash,
                 size=size,
                 last_modified=mtime_utc,
             )
+
+            # Cache the generated fingerprint in execution cache context
+            if cache is not None:
+                cache[f"fp:{norm_path}"] = fp
+
+            return fp
         except FileNotFoundError as e:
             # Handle transient filesystem race (e.g. deletion during processing)
             raise IncrementalAnalysisValidationError(
@@ -82,6 +105,25 @@ class SHA256FingerprintGenerator(FingerprintGenerator):
             raise IncrementalAnalysisValidationError(
                 f"Failed to generate fingerprint for '{norm_path}': {e}"
             ) from e
+
+    def generate_fingerprints_batch(self, file_paths: list[str]) -> list[FileFingerprint]:
+        """Performs optimized batch fingerprint generation preserving deterministic alphabetical order.
+
+        Args:
+            file_paths: Collection of file paths to process.
+
+        Returns:
+            List of FileFingerprint DTOs sorted by relative path.
+        """
+        results = []
+        for path in file_paths:
+            try:
+                results.append(self.generate_fingerprint(path))
+            except Exception:
+                continue
+        # Ensure output is deterministically ordered by path
+        results.sort(key=lambda fp: fp.path)
+        return results
 
     def _calculate_sha256(self, target_path: Path) -> str:
         """Computes SHA-256 hash using chunked buffered reading."""
