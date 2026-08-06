@@ -11,6 +11,7 @@ from app.dashboard.prompt_templates import DashboardPromptTemplates
 from app.dashboard.ai_analyzer import AIDashboardAnalysisResult, AIDashboardAnalyzer
 from app.dashboard.repository import DashboardRepository
 from app.dashboard.persistence import DashboardPersistenceService
+from app.dashboard.exporters import JSONDashboardExporter, MarkdownDashboardExporter, HTMLDashboardExporter
 
 __all__ = [
     "DashboardWidgetType",
@@ -29,4 +30,7 @@ __all__ = [
     "AIDashboardAnalyzer",
     "DashboardRepository",
     "DashboardPersistenceService",
+    "JSONDashboardExporter",
+    "MarkdownDashboardExporter",
+    "HTMLDashboardExporter",
 ]
