@@ -9,6 +9,8 @@ from app.dashboard.engine import DashboardAggregationEngine
 from app.dashboard.context_builder import DashboardAIContextBuilder
 from app.dashboard.prompt_templates import DashboardPromptTemplates
 from app.dashboard.ai_analyzer import AIDashboardAnalysisResult, AIDashboardAnalyzer
+from app.dashboard.repository import DashboardRepository
+from app.dashboard.persistence import DashboardPersistenceService
 
 __all__ = [
     "DashboardWidgetType",
@@ -25,4 +27,6 @@ __all__ = [
     "DashboardPromptTemplates",
     "AIDashboardAnalysisResult",
     "AIDashboardAnalyzer",
+    "DashboardRepository",
+    "DashboardPersistenceService",
 ]
