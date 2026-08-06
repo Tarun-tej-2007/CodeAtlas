@@ -17,6 +17,7 @@ from app.evolution.models import (
     EvolutionSummary,
 )
 from app.evolution.snapshot_builder import ArchitectureSnapshotService
+from app.evolution.diff_engine import ArchitectureEvolutionDifferenceEngine
 
 __all__ = [
     "ArchitecturalChangeType",
@@ -34,4 +35,5 @@ __all__ = [
     "EvolutionResult",
     "EvolutionSummary",
     "ArchitectureSnapshotService",
+    "ArchitectureEvolutionDifferenceEngine",
 ]
