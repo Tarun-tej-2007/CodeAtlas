@@ -4,7 +4,40 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 
-from app.governance.models import GovernancePolicy, GovernanceResult, PolicyRule, PolicyViolation
+from app.governance.models import (
+    EnrichedViolation,
+    GovernancePolicy,
+    GovernanceResult,
+    GovernanceViolationReport,
+    PolicyRule,
+    PolicyViolation,
+)
+
+
+class ViolationAnalyzer(ABC):
+    """Abstract interface defining operations for analyzing policy violation items."""
+
+    @abstractmethod
+    def analyze_violations(
+        self,
+        project_id: uuid.UUID,
+        commit_id: str,
+        violations: Tuple[PolicyViolation, ...],
+    ) -> GovernanceViolationReport:
+        """Analyzes a collection of PolicyViolation objects, enriching them with governance diagnostics.
+
+        Args:
+            project_id: Associated project scope identifier.
+            commit_id: Git commit hash identifier representing target codebase state.
+            violations: Immutable tuple of raw PolicyViolation objects.
+
+        Returns:
+            The compiled immutable GovernanceViolationReport.
+
+        Raises:
+            GovernanceValidationError: If validation fails or inconsistency is detected.
+        """
+        pass
 
 
 class PolicyRuleEvaluator(ABC):
