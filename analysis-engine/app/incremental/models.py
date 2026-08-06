@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from types import MappingProxyType
 from typing import Any, Mapping, Optional, Tuple
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, field_serializer
 
 from app.incremental.enums import ChangeType, IncrementalStatus
 
@@ -67,6 +67,11 @@ class RepositorySnapshot(BaseModel):
     def freeze_fingerprints(cls, v: Any) -> Any:
         """Enforces immutable mapping view on fingerprints dictionary."""
         return MappingProxyType(dict(v))
+
+    @field_serializer("fingerprints")
+    def serialize_fingerprints(self, fingerprints: Any) -> dict:
+        """Serializes mapping proxy to standard dict for Pydantic/FastAPI export."""
+        return dict(fingerprints)
 
 
 class ChangedFile(BaseModel):
@@ -143,6 +148,11 @@ class IncrementalAnalysisMetadata(BaseModel):
     def freeze_extra_info(cls, v: Any) -> Any:
         """Enforces immutable mapping view on extra_info dictionary."""
         return MappingProxyType(dict(v))
+
+    @field_serializer("extra_info")
+    def serialize_extra_info(self, extra_info: Any) -> dict:
+        """Serializes mapping proxy to standard dict for Pydantic/FastAPI export."""
+        return dict(extra_info)
 
 
 class IncrementalAnalysisRequest(BaseModel):
