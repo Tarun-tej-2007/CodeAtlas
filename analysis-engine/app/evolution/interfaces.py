@@ -8,6 +8,7 @@ from app.evolution.models import (
     ArchitecturalChange,
     ArchitectureSnapshot,
     EvolutionResult,
+    EvolutionTrendResult,
 )
 
 
@@ -113,4 +114,23 @@ class ArchitectureAnalysisProvider(ABC):
     @abstractmethod
     def get_technical_debt_report(self, commit_id: str) -> Optional[Any]:
         """Retrieves the TechnicalDebtReport compiled for the target commit."""
+        pass
+
+
+class TrendAnalyzer(ABC):
+    """Abstract interface defining trend analysis over historical codebase evolution."""
+
+    @abstractmethod
+    def analyze_trends(
+        self, history: Tuple[EvolutionResult, ...], *, window_size: Optional[int] = None
+    ) -> EvolutionTrendResult:
+        """Analyzes chronological evolution history to extract trends.
+
+        Args:
+            history: Chronological collection of EvolutionResult items.
+            window_size: Optional configurable trailing historical window size.
+
+        Returns:
+            The compiled EvolutionTrendResult.
+        """
         pass

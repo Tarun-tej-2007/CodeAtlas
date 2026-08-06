@@ -7,6 +7,7 @@ from app.evolution.interfaces import (
     EvolutionDifferenceEngine,
     EvolutionPersistence,
     ArchitectureAnalysisProvider,
+    TrendAnalyzer,
 )
 from app.evolution.models import (
     ArchitecturalChange,
@@ -15,9 +16,11 @@ from app.evolution.models import (
     EvolutionRequest,
     EvolutionResult,
     EvolutionSummary,
+    EvolutionTrendResult,
 )
 from app.evolution.snapshot_builder import ArchitectureSnapshotService
 from app.evolution.diff_engine import ArchitectureEvolutionDifferenceEngine
+from app.evolution.trend_analyzer import ArchitecturalTrendAnalyzer
 
 __all__ = [
     "ArchitecturalChangeType",
@@ -28,12 +31,15 @@ __all__ = [
     "EvolutionDifferenceEngine",
     "EvolutionPersistence",
     "ArchitectureAnalysisProvider",
+    "TrendAnalyzer",
     "ArchitecturalChange",
     "ArchitectureSnapshot",
     "EvolutionMetadata",
     "EvolutionRequest",
     "EvolutionResult",
     "EvolutionSummary",
+    "EvolutionTrendResult",
     "ArchitectureSnapshotService",
     "ArchitectureEvolutionDifferenceEngine",
+    "ArchitecturalTrendAnalyzer",
 ]

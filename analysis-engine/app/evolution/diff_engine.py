@@ -186,6 +186,7 @@ class ArchitectureEvolutionDifferenceEngine(EvolutionDifferenceEngine):
                     component_name="quality_metrics:summary",
                     change_type=ArchitecturalChangeType.MODIFIED,
                     description=f"Quality score shifted from {old_score} ({old_level}) to {new_score} ({new_level}).",
+                    metadata={"overall_score": new_score, "overall_level": new_level},
                 )
             )
         else:
@@ -194,6 +195,7 @@ class ArchitectureEvolutionDifferenceEngine(EvolutionDifferenceEngine):
                     component_name="quality_metrics:summary",
                     change_type=ArchitecturalChangeType.UNCHANGED,
                     description=f"Quality summary score is unchanged at {new_score}.",
+                    metadata={"overall_score": new_score, "overall_level": new_level},
                 )
             )
 
@@ -252,6 +254,7 @@ class ArchitectureEvolutionDifferenceEngine(EvolutionDifferenceEngine):
                     component_name="technical_debt:summary",
                     change_type=ArchitecturalChangeType.MODIFIED,
                     description=f"Technical debt metrics changed: items {old_items_count}->{new_items_count}, effort {old_effort}->{new_effort} mins.",
+                    metadata={"total_items": new_items_count, "total_effort_minutes": new_effort},
                 )
             )
         else:
@@ -260,6 +263,7 @@ class ArchitectureEvolutionDifferenceEngine(EvolutionDifferenceEngine):
                     component_name="technical_debt:summary",
                     change_type=ArchitecturalChangeType.UNCHANGED,
                     description=f"Technical debt summary is unchanged (items={new_items_count}, effort={new_effort} mins).",
+                    metadata={"total_items": new_items_count, "total_effort_minutes": new_effort},
                 )
             )
 

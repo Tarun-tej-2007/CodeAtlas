@@ -166,3 +166,30 @@ class EvolutionRequest(BaseModel):
         if not v or not v.strip():
             raise ValueError("Value must be a non-empty string.")
         return v
+
+
+class EvolutionTrendResult(BaseModel):
+    """Immutable model representing computed evolution trends across multiple analysis commits."""
+
+    coupling_trend: Tuple[float, ...] = Field(default_factory=tuple, description="Trend list of coupling values.")
+    complexity_trend: Tuple[float, ...] = Field(default_factory=tuple, description="Trend list of complexity values.")
+    tech_debt_trend: Tuple[int, ...] = Field(default_factory=tuple, description="Trend list of tech debt item counts.")
+    quality_trend: Tuple[float, ...] = Field(default_factory=tuple, description="Trend list of overall quality scores.")
+    layer_stability: Tuple[float, ...] = Field(default_factory=tuple, description="Trend list of layer counts.")
+    module_growth: Tuple[int, ...] = Field(default_factory=tuple, description="Accumulated module count trend.")
+    summary: Mapping[str, Any] = Field(
+        default_factory=dict, description="Summary mapping of overall trend indicators."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("summary", mode="after")
+    @classmethod
+    def freeze_summary(cls, v: Any) -> Any:
+        """Enforces runtime read-only dictionary mapping properties."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("summary")
+    def serialize_summary(self, summary: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(summary)
