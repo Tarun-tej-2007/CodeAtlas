@@ -2,13 +2,15 @@
 
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from app.governance.models import (
     ComplianceReport,
     ComplianceScore,
     EnrichedViolation,
+    GovernanceAnalysisResult,
     GovernancePolicy,
+    GovernanceRequest,
     GovernanceResult,
     GovernanceViolationReport,
     PolicyRule,
@@ -85,6 +87,22 @@ class PolicyRuleEvaluator(ABC):
         """
         pass
 
+    @abstractmethod
+    def evaluate_request(self, request: GovernanceRequest) -> GovernanceResult:
+        """Evaluates all policies defined in the GovernanceRequest and compiles the final GovernanceResult.
+
+        Args:
+            request: Injected GovernanceRequest payload.
+
+        Returns:
+            The compiled immutable GovernanceResult.
+
+        Raises:
+            GovernanceValidationError: If request parameter is invalid.
+            PolicyEvaluationError: If rule execution fails.
+        """
+        pass
+
 
 class GovernancePersistence(ABC):
     """Abstract interface defining repository persistence contracts for governance data."""
@@ -132,6 +150,60 @@ class GovernancePersistence(ABC):
         pass
 
     @abstractmethod
+    def save_violation_report(self, report: GovernanceViolationReport) -> None:
+        """Saves an enriched violation report to repository storage.
+
+        Args:
+            report: Immutable GovernanceViolationReport domain object.
+
+        Raises:
+            GovernancePersistenceError: If repository write fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_violation_report(self, report_id: uuid.UUID) -> Optional[GovernanceViolationReport]:
+        """Retrieves an enriched violation report by its unique identifier.
+
+        Args:
+            report_id: Unique report identifier.
+
+        Returns:
+            GovernanceViolationReport model if found, else None.
+
+        Raises:
+            GovernancePersistenceError: If repository query fails.
+        """
+        pass
+
+    @abstractmethod
+    def save_compliance_report(self, report: ComplianceReport) -> None:
+        """Saves a compliance score report to repository storage.
+
+        Args:
+            report: Immutable ComplianceReport domain object.
+
+        Raises:
+            GovernancePersistenceError: If repository write fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_compliance_report(self, report_id: uuid.UUID) -> Optional[ComplianceReport]:
+        """Retrieves a compliance score report by its unique identifier.
+
+        Args:
+            report_id: Unique report identifier.
+
+        Returns:
+            ComplianceReport model if found, else None.
+
+        Raises:
+            GovernancePersistenceError: If repository query fails.
+        """
+        pass
+
+    @abstractmethod
     def save_policy(self, policy: GovernancePolicy) -> None:
         """Saves a governance policy to repository storage.
 
@@ -155,5 +227,28 @@ class GovernancePersistence(ABC):
 
         Raises:
             GovernancePersistenceError: If repository query fails.
+        """
+        pass
+
+
+class GovernanceOrchestrator(ABC):
+    """Abstract interface defining the orchestration of governance evaluations."""
+
+    @abstractmethod
+    def verify_governance(
+        self,
+        request: GovernanceRequest,
+    ) -> GovernanceAnalysisResult:
+        """Orchestrates policy evaluations, violation enrichment, compliance scoring and persistence.
+
+        Args:
+            request: The immutable GovernanceRequest detailing project and policies.
+
+        Returns:
+            The compiled immutable GovernanceAnalysisResult.
+
+        Raises:
+            GovernanceValidationError: If request validation fails.
+            GovernanceError: For failures in evaluation, analysis, scoring or persistence.
         """
         pass

@@ -365,3 +365,49 @@ class ComplianceReport(BaseModel):
     def serialize_extra_info(self, extra_info: Any) -> dict:
         """Ensures serialization compatibility with mapping proxy classes."""
         return dict(extra_info)
+
+
+class GovernanceAnalysisResult(BaseModel):
+    """Immutable DTO representing the complete compiled architecture governance assessment."""
+
+    result_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique assessment tracking ID.")
+    project_id: uuid.UUID = Field(..., description="Associated project identifier.")
+    commit_id: str = Field(..., min_length=1, description="Associated Git commit hash.")
+    status: GovernanceStatus = Field(..., description="Overall governance evaluation status.")
+    evaluation_result: GovernanceResult = Field(..., description="Raw policy evaluation results and summary.")
+    violation_report: GovernanceViolationReport = Field(..., description="Enriched violation details report.")
+    compliance_report: ComplianceReport = Field(..., description="Calculated compliance score report.")
+    created_at: datetime = Field(..., description="Timezone-aware UTC timestamp when assessment was compiled.")
+    extra_info: Mapping[str, Any] = Field(
+        default_factory=dict, description="Extensible metadata properties map."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("commit_id", mode="after")
+    @classmethod
+    def validate_commit_id_non_empty(cls, v: str) -> str:
+        """Validates that commit hash value is not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("commit_id must be a non-empty string.")
+        return v
+
+    @field_validator("created_at", mode="after")
+    @classmethod
+    def validate_created_at_timezone(cls, v: datetime) -> datetime:
+        """Ensures creation timestamp is timezone-aware UTC."""
+        if v.tzinfo is None or v.tzinfo != timezone.utc:
+            raise ValueError("created_at must be a timezone-aware UTC datetime.")
+        return v
+
+    @field_validator("extra_info", mode="after")
+    @classmethod
+    def freeze_extra_info(cls, v: Any) -> Any:
+        """Enforces immutable view protection on extra_info mapping."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("extra_info")
+    def serialize_extra_info(self, extra_info: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(extra_info)
+
