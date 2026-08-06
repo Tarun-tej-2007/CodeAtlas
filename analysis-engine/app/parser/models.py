@@ -46,6 +46,7 @@ class AnalysisResult(BaseModel):
     report_result: Optional[Any] = Field(default=None, description="Optional report generation compilation or AI summary result.")
     # Integrates with persistence workflow
     dashboard_result: Optional[Any] = Field(default=None, description="Optional dashboard compilation aggregate result.")
+    # Integrates with dashboard end-to-end workflow
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
