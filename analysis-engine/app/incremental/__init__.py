@@ -19,6 +19,7 @@ from app.incremental.interfaces import (
     SnapshotDifferenceEngine,
     IncrementalAnalysisPersistence,
 )
+from app.incremental.snapshot_service import RepositorySnapshotService
 
 __all__ = [
     "ChangeType",
@@ -35,4 +36,5 @@ __all__ = [
     "SnapshotCalculator",
     "SnapshotDifferenceEngine",
     "IncrementalAnalysisPersistence",
+    "RepositorySnapshotService",
 ]
