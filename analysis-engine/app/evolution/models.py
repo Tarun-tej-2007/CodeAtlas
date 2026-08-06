@@ -156,6 +156,7 @@ class EvolutionRequest(BaseModel):
     project_name: str = Field(..., min_length=1, description="Associated codebase project identifier name.")
     source_commit: str = Field(..., min_length=1, description="Baseline source commit hash.")
     target_commit: str = Field(..., min_length=1, description="Target comparison commit hash.")
+    correlation_id: Optional[str] = Field(default=None, description="Optional correlation tracking identifier.")
 
     model_config = ConfigDict(frozen=True)
 
@@ -266,5 +267,19 @@ class ArchitectureEvolutionResult(BaseModel):
     summary: EvolutionSummary = Field(..., description="Aggregate changes counters summary.")
     trends: Optional[EvolutionTrendResult] = Field(default=None, description="Emerging trends metrics output data.")
     risk_report: Optional[ArchitecturalRiskReport] = Field(default=None, description="Identified architectural risks list report.")
+    extra_info: Mapping[str, Any] = Field(
+        default_factory=dict, description="Extensible contextual attribute mapping metadata."
+    )
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("extra_info", mode="after")
+    @classmethod
+    def freeze_extra_info(cls, v: Any) -> Any:
+        """Enforces runtime protection on extra_info mappings."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("extra_info")
+    def serialize_extra_info(self, extra_info: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(extra_info)

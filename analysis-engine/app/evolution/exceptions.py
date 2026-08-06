@@ -17,3 +17,9 @@ class EvolutionPersistenceError(EvolutionError):
     """Raised when repository storage query or write operations encounter database errors."""
 
     pass
+
+
+class EvolutionFileSystemError(EvolutionError):
+    """Raised when transient filesystem or scanning operations fail."""
+
+    pass

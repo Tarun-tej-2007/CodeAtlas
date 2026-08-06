@@ -163,7 +163,8 @@ class TestEvolutionService(unittest.TestCase):
         """Verifies exceptions in sub-engines map to EvolutionValidationError."""
         # 1. Snapshot calculator error
         self.snapshot_calc.calculate_snapshot.side_effect = RuntimeError("Disk IO Error")
-        with self.assertRaises(EvolutionValidationError) as ctx:
+        from app.evolution import EvolutionFileSystemError
+        with self.assertRaises(EvolutionFileSystemError) as ctx:
             self.service.evolve_architecture(self.request)
         self.assertIn("Snapshot building failed", str(ctx.exception))
 
