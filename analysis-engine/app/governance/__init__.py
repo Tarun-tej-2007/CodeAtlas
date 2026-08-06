@@ -17,6 +17,7 @@ from app.governance.models import (
     PolicyRule,
     PolicyViolation,
 )
+from app.governance.policy_definition import PolicyDefinitionService
 
 __all__ = [
     "PolicyCategory",
@@ -36,4 +37,5 @@ __all__ = [
     "GovernanceSummary",
     "GovernanceRequest",
     "GovernanceResult",
+    "PolicyDefinitionService",
 ]
