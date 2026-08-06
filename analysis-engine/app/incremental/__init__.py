@@ -4,6 +4,8 @@ from app.incremental.enums import ChangeType, IncrementalStatus
 from app.incremental.exceptions import (
     IncrementalAnalysisError,
     IncrementalAnalysisValidationError,
+    IncrementalAnalysisPersistenceError,
+    IncrementalAnalysisFileSystemError,
 )
 from app.incremental.models import (
     FileFingerprint,
@@ -34,6 +36,8 @@ __all__ = [
     "IncrementalStatus",
     "IncrementalAnalysisError",
     "IncrementalAnalysisValidationError",
+    "IncrementalAnalysisPersistenceError",
+    "IncrementalAnalysisFileSystemError",
     "FileFingerprint",
     "RepositorySnapshot",
     "ChangedFile",

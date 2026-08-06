@@ -12,6 +12,7 @@ from app.incremental import (
     IncrementalAnalysisMetadata,
     IncrementalAnalysisResult,
     IncrementalAnalysisValidationError,
+    IncrementalAnalysisPersistenceError,
     IncrementalAnalysisRepository,
     IncrementalAnalysisPersistenceService,
     IncrementalStatus,
@@ -143,7 +144,7 @@ class TestIncrementalPersistence(unittest.TestCase):
         """Verifies transaction failure triggers propagation of the exception."""
         self.repo.rollback_triggered = True
 
-        with self.assertRaises(RuntimeError) as ctx:
+        with self.assertRaises(IncrementalAnalysisPersistenceError) as ctx:
             self.persistence.save_snapshot(self.snapshot)
         self.assertIn("Transaction rollback", str(ctx.exception))
 

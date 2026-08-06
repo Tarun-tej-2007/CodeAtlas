@@ -99,6 +99,7 @@ router = APIRouter(prefix="/incremental", dependencies=[Depends(verify_token)])
 )
 async def submit_incremental_analysis(
     payload: IncrementalAnalysisRequestSchema,
+    x_request_id: Optional[str] = Header(default=None, alias="X-Request-ID"),
     service: IncrementalAnalysisService = Depends(get_incremental_service),
 ) -> Dict[str, Any]:
     """Resolves changed files difference metrics and calculates downstream impact sets."""
@@ -135,6 +136,7 @@ async def submit_incremental_analysis(
             source_commit=payload.source_commit,
             target_commit=payload.target_commit,
             dependency_graph=dependency_graph,
+            correlation_id=x_request_id,
         )
         return result.model_dump()
     except Exception as e:

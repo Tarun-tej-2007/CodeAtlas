@@ -6,7 +6,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Union
 
-from app.incremental.exceptions import IncrementalAnalysisValidationError
+from app.incremental.exceptions import (
+    IncrementalAnalysisValidationError,
+    IncrementalAnalysisFileSystemError,
+)
 from app.incremental.interfaces import FingerprintGenerator
 from app.incremental.models import FileFingerprint
 
@@ -98,11 +101,11 @@ class SHA256FingerprintGenerator(FingerprintGenerator):
             return fp
         except FileNotFoundError as e:
             # Handle transient filesystem race (e.g. deletion during processing)
-            raise IncrementalAnalysisValidationError(
+            raise IncrementalAnalysisFileSystemError(
                 f"Transient filesystem deletion race occurred for '{norm_path}': {e}"
             ) from e
         except Exception as e:
-            raise IncrementalAnalysisValidationError(
+            raise IncrementalAnalysisFileSystemError(
                 f"Failed to generate fingerprint for '{norm_path}': {e}"
             ) from e
 
