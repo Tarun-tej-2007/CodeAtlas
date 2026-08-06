@@ -78,63 +78,74 @@ class IncrementalAnalysisService:
         if dependency_graph is None or not isinstance(dependency_graph, DependencyGraph):
             raise IncrementalAnalysisValidationError("dependency_graph must be an instance of DependencyGraph.")
 
-        # 1. Compile current repository snapshot
-        current_snapshot = self.snapshot_service.create_snapshot(repository_root, target_commit)
+        from app.incremental.cache import execution_cache
 
-        # 2. Retrieve previous repository snapshot
-        previous_snapshot = self.persistence.get_snapshot(source_commit)
-        if previous_snapshot is None:
-            # Handle first-time analysis: compare against empty baseline snapshot
-            previous_snapshot = RepositorySnapshot(commit_id=source_commit, fingerprints={})
+        # Set up a clean execution-scoped cache context
+        token = execution_cache.set({})
+        try:
+            # 1. Retrieve previous repository snapshot first to populate cache with baseline snapshots
+            previous_snapshot = self.persistence.get_snapshot(source_commit)
+            if previous_snapshot is None:
+                previous_snapshot = RepositorySnapshot(commit_id=source_commit, fingerprints={})
+
+            # Save the previous snapshot in cache context for downstream fingerprint generators
+            cache = execution_cache.get()
+            if cache is not None:
+                cache["previous_snapshot"] = previous_snapshot
+
+            # 2. Compile current repository snapshot
+            current_snapshot = self.snapshot_service.create_snapshot(repository_root, target_commit)
 
         # 3. Compute changes
-        changed_files = self.diff_engine.diff_snapshots(previous_snapshot, current_snapshot)
+            changed_files = self.diff_engine.diff_snapshots(previous_snapshot, current_snapshot)
 
-        # 4. Count change categories
-        added_count = 0
-        modified_count = 0
-        deleted_count = 0
-        unchanged_count = 0
+            # 4. Count change categories
+            added_count = 0
+            modified_count = 0
+            deleted_count = 0
+            unchanged_count = 0
 
-        for cf in changed_files:
-            if cf.change_type == ChangeType.ADDED:
-                added_count += 1
-            elif cf.change_type == ChangeType.MODIFIED:
-                modified_count += 1
-            elif cf.change_type == ChangeType.DELETED:
-                deleted_count += 1
-            elif cf.change_type == ChangeType.UNCHANGED:
-                unchanged_count += 1
+            for cf in changed_files:
+                if cf.change_type == ChangeType.ADDED:
+                    added_count += 1
+                elif cf.change_type == ChangeType.MODIFIED:
+                    modified_count += 1
+                elif cf.change_type == ChangeType.DELETED:
+                    deleted_count += 1
+                elif cf.change_type == ChangeType.UNCHANGED:
+                    unchanged_count += 1
 
-        reanalysis_required = (added_count + modified_count + deleted_count) > 0
+            reanalysis_required = (added_count + modified_count + deleted_count) > 0
 
-        # 5. Determine impact set (Short-circuit if unchanged)
-        impacted_nodes: Tuple[str, ...] = ()
-        if reanalysis_required:
-            impacted_nodes = self.impact_analyzer.analyze_impact(dependency_graph, changed_files)
+            # 5. Determine impact set (Short-circuit if unchanged)
+            impacted_nodes: Tuple[str, ...] = ()
+            if reanalysis_required:
+                impacted_nodes = self.impact_analyzer.analyze_impact(dependency_graph, changed_files)
 
-        # 6. Build Result DTO
-        metadata = IncrementalAnalysisMetadata(
-            project_name=project_name,
-            source_commit=source_commit,
-            target_commit=target_commit,
-            created_at=datetime.now(timezone.utc),
-            status=IncrementalStatus.COMPLETED,
-            extra_info={"impacted_nodes": list(impacted_nodes)},
-        )
+            # 6. Build Result DTO
+            metadata = IncrementalAnalysisMetadata(
+                project_name=project_name,
+                source_commit=source_commit,
+                target_commit=target_commit,
+                created_at=datetime.now(timezone.utc),
+                status=IncrementalStatus.COMPLETED,
+                extra_info={"impacted_nodes": list(impacted_nodes)},
+            )
 
-        result = IncrementalAnalysisResult(
-            analysis_id=uuid.uuid4(),
-            metadata=metadata,
-            added_count=added_count,
-            modified_count=modified_count,
-            deleted_count=deleted_count,
-            unchanged_count=unchanged_count,
-            changed_files=changed_files,
-        )
+            result = IncrementalAnalysisResult(
+                analysis_id=uuid.uuid4(),
+                metadata=metadata,
+                added_count=added_count,
+                modified_count=modified_count,
+                deleted_count=deleted_count,
+                unchanged_count=unchanged_count,
+                changed_files=changed_files,
+            )
 
-        # 7. Persist result and target snapshot exactly once
-        self.persistence.save_result(result)
-        self.persistence.save_snapshot(current_snapshot)
+            # 7. Persist result and target snapshot exactly once
+            self.persistence.save_result(result)
+            self.persistence.save_snapshot(current_snapshot)
 
-        return result
+            return result
+        finally:
+            execution_cache.reset(token)

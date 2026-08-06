@@ -31,6 +31,14 @@ class SHA256SnapshotDifferenceEngine(SnapshotDifferenceEngine):
         if not isinstance(old_snapshot, RepositorySnapshot) or not isinstance(new_snapshot, RepositorySnapshot):
             raise IncrementalAnalysisValidationError("Inputs must be instances of RepositorySnapshot.")
 
+        from app.incremental.cache import execution_cache
+
+        cache = execution_cache.get()
+        if cache is not None:
+            diff_key = f"diff:{old_snapshot.commit_id}:{new_snapshot.commit_id}"
+            if diff_key in cache:
+                return cache[diff_key]
+
         old_keys = set(old_snapshot.fingerprints.keys())
         new_keys = set(new_snapshot.fingerprints.keys())
 
@@ -87,4 +95,8 @@ class SHA256SnapshotDifferenceEngine(SnapshotDifferenceEngine):
         # Sort alphabetically by normalized path to ensure deterministic output ordering
         changed_files_list.sort(key=lambda cf: cf.path)
 
-        return tuple(changed_files_list)
+        res_tuple = tuple(changed_files_list)
+        if cache is not None:
+            cache[diff_key] = res_tuple
+
+        return res_tuple
