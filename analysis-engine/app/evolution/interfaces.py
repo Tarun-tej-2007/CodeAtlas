@@ -93,6 +93,11 @@ class EvolutionPersistence(ABC):
         """
         pass
 
+    @abstractmethod
+    def list_results(self) -> Tuple[EvolutionResult, ...]:
+        """Retrieves all stored EvolutionResult instances."""
+        pass
+
 
 class ArchitectureAnalysisProvider(ABC):
     """Abstract interface defining the retrieval boundary for codebase analysis reports."""
