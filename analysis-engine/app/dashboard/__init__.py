@@ -12,6 +12,7 @@ from app.dashboard.ai_analyzer import AIDashboardAnalysisResult, AIDashboardAnal
 from app.dashboard.repository import DashboardRepository
 from app.dashboard.persistence import DashboardPersistenceService
 from app.dashboard.exporters import JSONDashboardExporter, MarkdownDashboardExporter, HTMLDashboardExporter
+from app.dashboard.comparison import DashboardWidgetDifference, DashboardComparison, DashboardComparisonEngine
 
 __all__ = [
     "DashboardWidgetType",
@@ -33,4 +34,7 @@ __all__ = [
     "JSONDashboardExporter",
     "MarkdownDashboardExporter",
     "HTMLDashboardExporter",
+    "DashboardWidgetDifference",
+    "DashboardComparison",
+    "DashboardComparisonEngine",
 ]
