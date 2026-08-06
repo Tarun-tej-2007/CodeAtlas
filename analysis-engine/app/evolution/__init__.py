@@ -20,11 +20,13 @@ from app.evolution.models import (
     EvolutionTrendResult,
     ArchitecturalRisk,
     ArchitecturalRiskReport,
+    ArchitectureEvolutionResult,
 )
 from app.evolution.snapshot_builder import ArchitectureSnapshotService
 from app.evolution.diff_engine import ArchitectureEvolutionDifferenceEngine
 from app.evolution.trend_analyzer import ArchitecturalTrendAnalyzer
 from app.evolution.risk_analyzer import CodeAtlasArchitecturalRiskAnalyzer
+from app.evolution.service import ArchitectureEvolutionService
 
 __all__ = [
     "ArchitecturalChangeType",
@@ -47,8 +49,10 @@ __all__ = [
     "EvolutionTrendResult",
     "ArchitecturalRisk",
     "ArchitecturalRiskReport",
+    "ArchitectureEvolutionResult",
     "ArchitectureSnapshotService",
     "ArchitectureEvolutionDifferenceEngine",
     "ArchitecturalTrendAnalyzer",
     "CodeAtlasArchitecturalRiskAnalyzer",
+    "ArchitectureEvolutionService",
 ]

@@ -253,3 +253,18 @@ class ArchitecturalRiskReport(BaseModel):
     def serialize_metadata(self, metadata: Any) -> dict:
         """Ensures serialization compatibility with mapping proxy classes."""
         return dict(metadata)
+
+
+class ArchitectureEvolutionResult(BaseModel):
+    """Immutable model representing the complete aggregated result of the architecture evolution orchestration run."""
+
+    evolution_result_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique aggregate result identifier.")
+    request: EvolutionRequest = Field(..., description="Evolution analysis query request parameters.")
+    current_snapshot: ArchitectureSnapshot = Field(..., description="Calculated snapshot representing updated state.")
+    previous_snapshot: Optional[ArchitectureSnapshot] = Field(default=None, description="Injected baseline snapshot representing source point.")
+    changes: Tuple[ArchitecturalChange, ...] = Field(default_factory=tuple, description="Differences change log entries list.")
+    summary: EvolutionSummary = Field(..., description="Aggregate changes counters summary.")
+    trends: Optional[EvolutionTrendResult] = Field(default=None, description="Emerging trends metrics output data.")
+    risk_report: Optional[ArchitecturalRiskReport] = Field(default=None, description="Identified architectural risks list report.")
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
