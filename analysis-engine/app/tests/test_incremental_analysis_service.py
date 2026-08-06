@@ -142,7 +142,9 @@ class TestIncrementalAnalysisService(unittest.TestCase):
         self.diff_engine.diff_snapshots.return_value = (cf,)
         self.persistence.save_result.side_effect = RuntimeError("DB Write Error")
 
-        with self.assertRaises(RuntimeError) as ctx:
+        from app.incremental.exceptions import IncrementalAnalysisPersistenceError
+
+        with self.assertRaises(IncrementalAnalysisPersistenceError) as ctx:
             self.service.analyze_incrementally(
                 project_id=self.project_id,
                 project_name=self.project_name,
@@ -151,7 +153,7 @@ class TestIncrementalAnalysisService(unittest.TestCase):
                 target_commit="c2",
                 dependency_graph=self.dependency_graph,
             )
-        self.assertEqual(str(ctx.exception), "DB Write Error")
+        self.assertIn("DB Write Error", str(ctx.exception))
 
 
 if __name__ == "__main__":

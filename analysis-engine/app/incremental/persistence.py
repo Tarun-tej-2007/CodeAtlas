@@ -4,7 +4,10 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
-from app.incremental.exceptions import IncrementalAnalysisValidationError
+from app.incremental.exceptions import (
+    IncrementalAnalysisValidationError,
+    IncrementalAnalysisPersistenceError,
+)
 from app.incremental.interfaces import IncrementalAnalysisPersistence
 from app.incremental.models import IncrementalAnalysisResult, RepositorySnapshot
 
@@ -53,14 +56,21 @@ class IncrementalAnalysisPersistenceService(IncrementalAnalysisPersistence):
 
         # Serialize Pydantic model to dictionary
         serialized_data = result.model_dump()
-        self.repository.save_result(result.analysis_id, serialized_data)
+        try:
+            self.repository.save_result(result.analysis_id, serialized_data)
+        except Exception as e:
+            raise IncrementalAnalysisPersistenceError(f"Database write error during save_result: {e}") from e
 
     def get_result(self, analysis_id: uuid.UUID) -> Optional[IncrementalAnalysisResult]:
         """Retrieves and deserializes IncrementalAnalysisResult from persistence storage."""
         if analysis_id is None or not isinstance(analysis_id, uuid.UUID):
             raise IncrementalAnalysisValidationError("analysis_id must be a valid UUID.")
 
-        data = self.repository.get_result(analysis_id)
+        try:
+            data = self.repository.get_result(analysis_id)
+        except Exception as e:
+            raise IncrementalAnalysisPersistenceError(f"Database read error during get_result: {e}") from e
+
         if data is None:
             return None
 
@@ -81,14 +91,21 @@ class IncrementalAnalysisPersistenceService(IncrementalAnalysisPersistence):
 
         # Serialize Pydantic model to dictionary
         serialized_data = snapshot.model_dump()
-        self.repository.save_snapshot(snapshot.commit_id, serialized_data)
+        try:
+            self.repository.save_snapshot(snapshot.commit_id, serialized_data)
+        except Exception as e:
+            raise IncrementalAnalysisPersistenceError(f"Database write error during save_snapshot: {e}") from e
 
     def get_snapshot(self, commit_id: str) -> Optional[RepositorySnapshot]:
         """Retrieves and deserializes RepositorySnapshot from persistence storage."""
         if commit_id is None or not commit_id.strip():
             raise IncrementalAnalysisValidationError("commit_id must be a non-empty string.")
 
-        data = self.repository.get_snapshot(commit_id)
+        try:
+            data = self.repository.get_snapshot(commit_id)
+        except Exception as e:
+            raise IncrementalAnalysisPersistenceError(f"Database read error during get_snapshot: {e}") from e
+
         if data is None:
             return None
 

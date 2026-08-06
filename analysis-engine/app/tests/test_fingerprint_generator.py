@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 
 from app.incremental import (
     IncrementalAnalysisValidationError,
+    IncrementalAnalysisFileSystemError,
     SHA256FingerprintGenerator,
     FileFingerprint,
 )
@@ -112,7 +113,7 @@ class TestFingerprintGenerator(unittest.TestCase):
 
         # Mock open to raise FileNotFoundError to simulate file deletion right when we open it
         with patch("builtins.open", side_effect=FileNotFoundError("Mock delete race")):
-            with self.assertRaises(IncrementalAnalysisValidationError) as ctx:
+            with self.assertRaises(IncrementalAnalysisFileSystemError) as ctx:
                 self.generator.generate_fingerprint(str(f1))
             self.assertIn("Transient filesystem deletion race occurred", str(ctx.exception))
 
