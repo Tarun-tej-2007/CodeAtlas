@@ -86,3 +86,24 @@ class IncrementalAnalysisPersistence(ABC):
             The stored IncrementalAnalysisResult or None.
         """
         pass
+
+    @abstractmethod
+    def save_snapshot(self, snapshot: RepositorySnapshot) -> None:
+        """Persists the RepositorySnapshot object.
+
+        Args:
+            snapshot: Repository snapshot to store.
+        """
+        pass
+
+    @abstractmethod
+    def get_snapshot(self, commit_id: str) -> Optional[RepositorySnapshot]:
+        """Retrieves a RepositorySnapshot by commit ID.
+
+        Args:
+            commit_id: Unique commit hash identifier.
+
+        Returns:
+            The stored RepositorySnapshot or None.
+        """
+        pass
