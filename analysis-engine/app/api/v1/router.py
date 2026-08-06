@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, analyze, version, incremental
+from app.api.v1.endpoints import health, analyze, version, incremental, evolution
 
 api_router = APIRouter()
 
@@ -24,4 +24,10 @@ api_router.include_router(
     incremental.router,
     prefix="/api/v1",
     tags=["Incremental Analysis"]
+)
+
+api_router.include_router(
+    evolution.router,
+    prefix="/api/v1",
+    tags=["Architecture Evolution"]
 )
