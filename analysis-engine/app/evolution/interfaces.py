@@ -9,6 +9,7 @@ from app.evolution.models import (
     ArchitectureSnapshot,
     EvolutionResult,
     EvolutionTrendResult,
+    ArchitecturalRiskReport,
 )
 
 
@@ -132,5 +133,21 @@ class TrendAnalyzer(ABC):
 
         Returns:
             The compiled EvolutionTrendResult.
+        """
+        pass
+
+
+class RiskAnalyzer(ABC):
+    """Abstract interface defining risk analysis over evolution trend results."""
+
+    @abstractmethod
+    def analyze_risks(self, trend_result: EvolutionTrendResult) -> ArchitecturalRiskReport:
+        """Analyzes trend details to identify emerging structural risks.
+
+        Args:
+            trend_result: Input compiled EvolutionTrendResult.
+
+        Returns:
+            The generated ArchitecturalRiskReport.
         """
         pass

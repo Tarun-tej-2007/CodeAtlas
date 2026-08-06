@@ -6,7 +6,7 @@ from types import MappingProxyType
 from typing import Any, Mapping, Optional, Tuple
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
-from app.evolution.enums import ArchitecturalChangeType, EvolutionStatus
+from app.evolution.enums import ArchitecturalChangeType, EvolutionStatus, RiskSeverity
 
 
 class ArchitecturalChange(BaseModel):
@@ -193,3 +193,63 @@ class EvolutionTrendResult(BaseModel):
     def serialize_summary(self, summary: Any) -> dict:
         """Ensures serialization compatibility with mapping proxy classes."""
         return dict(summary)
+
+
+class ArchitecturalRisk(BaseModel):
+    """Immutable model representing an identified architectural risk with descriptive severity classification."""
+
+    risk_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique risk tracking identifier.")
+    name: str = Field(..., min_length=1, description="Unique name/key of the architectural risk.")
+    description: str = Field(..., description="Details and context explaining the risk finding.")
+    score: float = Field(..., ge=0.0, le=100.0, description="Numerical risk score between 0.0 and 100.0.")
+    severity: RiskSeverity = Field(..., description="Risk severity tier level.")
+    mitigation_recommendation: str = Field(..., description="Actionable recommendations to resolve or mitigate the risk.")
+    metadata: Mapping[str, Any] = Field(
+        default_factory=dict, description="Extensible metadata properties."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("metadata", mode="after")
+    @classmethod
+    def freeze_metadata(cls, v: Any) -> Any:
+        """Enforces runtime read-only dictionary mapping properties."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("metadata")
+    def serialize_metadata(self, metadata: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(metadata)
+
+
+class ArchitecturalRiskReport(BaseModel):
+    """Immutable report aggregating all identified architectural risks and computing an overall metric."""
+
+    report_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique report identifier.")
+    generated_at: datetime = Field(..., description="UTC timezone-aware generation timestamp.")
+    overall_risk_score: float = Field(..., ge=0.0, le=100.0, description="Aggregated overall risk score.")
+    risks: Tuple[ArchitecturalRisk, ...] = Field(default_factory=tuple, description="Sorted tuple of detected risks.")
+    metadata: Mapping[str, Any] = Field(
+        default_factory=dict, description="Extensible metadata properties."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("generated_at", mode="after")
+    @classmethod
+    def validate_generated_at_timezone(cls, v: datetime) -> datetime:
+        """Ensures generated_at timestamp is timezone-aware and set to UTC."""
+        if v.tzinfo is None or v.tzinfo != timezone.utc:
+            raise ValueError("generated_at must be a timezone-aware UTC datetime.")
+        return v
+
+    @field_validator("metadata", mode="after")
+    @classmethod
+    def freeze_metadata(cls, v: Any) -> Any:
+        """Enforces runtime read-only dictionary mapping properties."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("metadata")
+    def serialize_metadata(self, metadata: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(metadata)
