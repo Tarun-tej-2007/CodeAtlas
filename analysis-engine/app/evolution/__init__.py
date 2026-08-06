@@ -1,7 +1,12 @@
 """CodeAtlas Architecture Evolution Domain Subsystem Package."""
 
 from app.evolution.enums import ArchitecturalChangeType, EvolutionStatus, RiskSeverity
-from app.evolution.exceptions import EvolutionError, EvolutionValidationError, EvolutionPersistenceError
+from app.evolution.exceptions import (
+    EvolutionError,
+    EvolutionValidationError,
+    EvolutionPersistenceError,
+    EvolutionFileSystemError,
+)
 from app.evolution.interfaces import (
     ArchitectureSnapshotCalculator,
     EvolutionDifferenceEngine,
@@ -40,6 +45,7 @@ __all__ = [
     "EvolutionError",
     "EvolutionValidationError",
     "EvolutionPersistenceError",
+    "EvolutionFileSystemError",
     "ArchitectureSnapshotCalculator",
     "EvolutionDifferenceEngine",
     "EvolutionPersistence",

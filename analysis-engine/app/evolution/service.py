@@ -4,8 +4,16 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
+import logging
+import time
 from app.evolution.enums import ArchitecturalChangeType, EvolutionStatus
-from app.evolution.exceptions import EvolutionValidationError
+from app.evolution.exceptions import (
+    EvolutionValidationError,
+    EvolutionPersistenceError,
+    EvolutionFileSystemError,
+)
+
+logger = logging.getLogger("analysis-engine.evolution")
 from app.evolution.interfaces import (
     ArchitectureSnapshotCalculator,
     EvolutionDifferenceEngine,
@@ -78,31 +86,53 @@ class ArchitectureEvolutionService:
 
         Raises:
             EvolutionValidationError: If any validation checks or engine operations fail.
+            EvolutionPersistenceError: If database operations fail.
+            EvolutionFileSystemError: If filesystem/builder operations fail.
         """
         if request is None or not isinstance(request, EvolutionRequest):
             raise EvolutionValidationError("request parameter must be a valid EvolutionRequest.")
 
+        corr_id = request.correlation_id or str(uuid.uuid4())
+        logger.info("[Correlation-ID: %s] Starting architecture evolution analysis for project: %s", corr_id, request.project_name)
+
         from app.evolution.cache import execution_cache
         token = execution_cache.set({})
 
+        start_total = time.perf_counter()
+        snapshot_generation_ms = 0.0
+        architecture_comparison_ms = 0.0
+        trend_analysis_ms = 0.0
+        risk_analysis_ms = 0.0
+        persistence_ms = 0.0
+
         try:
             # 1. Build current target snapshot
+            logger.info("[Correlation-ID: %s] Stage 1: Building snapshot for target commit: %s", corr_id, request.target_commit)
+            start_snap = time.perf_counter()
             try:
                 current_snapshot = self.snapshot_calculator.calculate_snapshot(request.target_commit)
             except Exception as e:
-                raise EvolutionValidationError(f"Snapshot building failed: {e}") from e
+                logger.error("[Correlation-ID: %s] Snapshot building failed: %s", corr_id, e)
+                raise EvolutionFileSystemError(f"Snapshot building failed: {e}") from e
+            snapshot_generation_ms = (time.perf_counter() - start_snap) * 1000.0
 
             # 2. Retrieve previous source snapshot from persistence
+            logger.info("[Correlation-ID: %s] Stage 2: Retrieving snapshot for source commit: %s", corr_id, request.source_commit)
+            start_persist = time.perf_counter()
             try:
                 previous_snapshot = self.persistence.get_snapshot(request.source_commit)
             except Exception as e:
-                raise EvolutionValidationError(
+                logger.error("[Correlation-ID: %s] Database retrieval failed for snapshot: %s", corr_id, e)
+                raise EvolutionPersistenceError(
                     f"Failed to retrieve source snapshot for '{request.source_commit}': {e}"
                 ) from e
+            persistence_ms += (time.perf_counter() - start_persist) * 1000.0
 
             # 3. Compare snapshots
-            # Support first-time analysis when previous snapshot is not found in database
+            logger.info("[Correlation-ID: %s] Stage 3: Comparing snapshots", corr_id)
+            start_compare = time.perf_counter()
             if previous_snapshot is None:
+                logger.info("[Correlation-ID: %s] Baseline snapshot not found in database. Performing first-time evolution.", corr_id)
                 empty_snapshot = ArchitectureSnapshot(
                     snapshot_id=uuid.uuid4(),
                     commit_id=request.source_commit,
@@ -113,12 +143,15 @@ class ArchitectureEvolutionService:
                 try:
                     changes = self.difference_engine.diff_snapshots(empty_snapshot, current_snapshot)
                 except Exception as e:
+                    logger.error("[Correlation-ID: %s] Snapshot comparison failed: %s", corr_id, e)
                     raise EvolutionValidationError(f"Snapshot comparison failed: {e}") from e
             else:
                 try:
                     changes = self.difference_engine.diff_snapshots(previous_snapshot, current_snapshot)
                 except Exception as e:
+                    logger.error("[Correlation-ID: %s] Snapshot comparison failed: %s", corr_id, e)
                     raise EvolutionValidationError(f"Snapshot comparison failed: {e}") from e
+            architecture_comparison_ms = (time.perf_counter() - start_compare) * 1000.0
 
             # 4. Count change categories
             added_count = 0
@@ -147,10 +180,14 @@ class ArchitectureEvolutionService:
             trends = None
             risk_report = None
 
+            logger.info("[Correlation-ID: %s] Stage 4: Listing historical results", corr_id)
+            start_persist = time.perf_counter()
             try:
                 history = self.persistence.list_results()
             except Exception as e:
-                raise EvolutionValidationError(f"Failed to load historical results: {e}") from e
+                logger.error("[Correlation-ID: %s] Failed to load historical results: %s", corr_id, e)
+                raise EvolutionPersistenceError(f"Failed to load historical results: {e}") from e
+            persistence_ms += (time.perf_counter() - start_persist) * 1000.0
 
             # Build current temporary EvolutionResult wrapper for trends
             meta = EvolutionMetadata(
@@ -170,11 +207,39 @@ class ArchitectureEvolutionService:
             full_history = tuple(list(history) + [current_res])
 
             if previous_snapshot is not None and len(full_history) >= 2:
+                logger.info("[Correlation-ID: %s] Stage 5: Analyzing trends and risks", corr_id)
+                start_trend = time.perf_counter()
                 try:
                     trends = self.trend_analyzer.analyze_trends(full_history)
+                except Exception as e:
+                    logger.error("[Correlation-ID: %s] Trend calculation failed: %s", corr_id, e)
+                    raise EvolutionValidationError(f"Trend calculation failed: {e}") from e
+                trend_analysis_ms = (time.perf_counter() - start_trend) * 1000.0
+
+                start_risk = time.perf_counter()
+                try:
                     risk_report = self.risk_analyzer.analyze_risks(trends)
                 except Exception as e:
-                    raise EvolutionValidationError(f"Trend/Risk calculation failed: {e}") from e
+                    logger.error("[Correlation-ID: %s] Risk analysis failed: %s", corr_id, e)
+                    raise EvolutionValidationError(f"Risk analysis failed: {e}") from e
+                risk_analysis_ms = (time.perf_counter() - start_risk) * 1000.0
+            else:
+                logger.info("[Correlation-ID: %s] Skipping trends/risks: insufficient history.", corr_id)
+
+            total_orchestration_ms = (time.perf_counter() - start_total) * 1000.0
+            logger.info("[Correlation-ID: %s] Completed architecture evolution analysis in %0.2fms", corr_id, total_orchestration_ms)
+
+            extra_info = {
+                "correlation_id": corr_id,
+                "metrics": {
+                    "snapshot_generation_ms": snapshot_generation_ms,
+                    "architecture_comparison_ms": architecture_comparison_ms,
+                    "trend_analysis_ms": trend_analysis_ms,
+                    "risk_analysis_ms": risk_analysis_ms,
+                    "persistence_ms": persistence_ms,
+                    "total_orchestration_ms": total_orchestration_ms,
+                }
+            }
 
             # 6. Package final result DTO
             return ArchitectureEvolutionResult(
@@ -186,6 +251,7 @@ class ArchitectureEvolutionService:
                 summary=summary,
                 trends=trends,
                 risk_report=risk_report,
+                extra_info=extra_info,
             )
         finally:
             execution_cache.reset(token)
