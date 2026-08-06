@@ -7,15 +7,22 @@ from typing import Any, Dict, Union
 
 from app.incremental.exceptions import IncrementalAnalysisValidationError
 from app.incremental.models import FileFingerprint, RepositorySnapshot
+from app.incremental.interfaces import FingerprintGenerator
+from app.incremental.fingerprint import SHA256FingerprintGenerator
 from app.scanner.pipeline import ScannerPipeline
 
 
 class RepositorySnapshotService:
     """Service responsible for scanning the repository workspace and compiling an immutable RepositorySnapshot."""
 
-    def __init__(self, scanner_pipeline: ScannerPipeline | None = None) -> None:
-        """Initializes the snapshot service with injected ScannerPipeline."""
+    def __init__(
+        self,
+        scanner_pipeline: ScannerPipeline | None = None,
+        fingerprint_generator: FingerprintGenerator | None = None,
+    ) -> None:
+        """Initializes the snapshot service with injected ScannerPipeline and FingerprintGenerator."""
         self.scanner_pipeline = scanner_pipeline or ScannerPipeline()
+        self.fingerprint_generator = fingerprint_generator or SHA256FingerprintGenerator()
 
     def create_snapshot(self, repository_root: Union[Path, str], commit_id: str) -> RepositorySnapshot:
         """Enumerate repository workspace files and compiles a deterministic RepositorySnapshot.
@@ -62,19 +69,11 @@ class RepositorySnapshotService:
                 continue
 
             try:
-                # 1. Calculate SHA-256 fingerprint hash
-                sha256_hash = self._calculate_sha256(abs_path)
-
-                # 2. Extract UTC modification metadata
-                stat_info = abs_path.stat()
-                mtime_utc = datetime.fromtimestamp(stat_info.st_mtime, tz=timezone.utc)
-
-                fingerprints[rel_path_str] = FileFingerprint(
-                    path=rel_path_str,
-                    hash=sha256_hash,
-                    size=discovered_file.size,
-                    last_modified=mtime_utc,
+                # Delegate to injected fingerprint generator
+                fp = self.fingerprint_generator.generate_fingerprint(
+                    str(abs_path), relative_path=rel_path_str
                 )
+                fingerprints[rel_path_str] = fp
             except Exception as e:
                 # Log or propagate file access failures defensively
                 raise IncrementalAnalysisValidationError(
@@ -85,11 +84,3 @@ class RepositorySnapshotService:
             commit_id=commit_id,
             fingerprints=fingerprints,
         )
-
-    def _calculate_sha256(self, file_path: Path) -> str:
-        """Helper computing SHA-256 checksums from binary blocks."""
-        sha256_algo = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            while chunk := f.read(8192):
-                sha256_algo.update(chunk)
-        return sha256_algo.hexdigest()
