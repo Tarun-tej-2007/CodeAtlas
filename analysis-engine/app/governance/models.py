@@ -206,3 +206,93 @@ class GovernanceResult(BaseModel):
     def serialize_extra_info(self, extra_info: Any) -> dict:
         """Ensures serialization compatibility with mapping proxy classes."""
         return dict(extra_info)
+
+
+class EnrichedViolation(BaseModel):
+    """Immutable model representing a governance policy violation enriched with diagnostic details."""
+
+    violation_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique violation tracking ID.")
+    rule_id: uuid.UUID = Field(..., description="Associated policy rule identifier.")
+    rule_name: str = Field(..., min_length=1, description="Associated policy rule name.")
+    original_severity: ViolationSeverity = Field(..., description="Original rule violation severity.")
+    refined_severity: ViolationSeverity = Field(..., description="Refined severity category based on impact score.")
+    priority_score: float = Field(..., ge=0.0, le=100.0, description="Priority score rating from 0 to 100.")
+    priority_tier: str = Field(..., min_length=1, description="Categorized priority tier, e.g. HIGH, MEDIUM, LOW.")
+    root_cause: str = Field(..., min_length=1, description="Identified root cause category description.")
+    impact_scope: str = Field(..., min_length=1, description="Calculated impact scope classification.")
+    suggested_remediation: str = Field(..., min_length=1, description="Recommended resolution action description.")
+    original_message: str = Field(..., min_length=1, description="Original policy violation message.")
+    details: Mapping[str, Any] = Field(
+        default_factory=dict, description="Metadata dictionary mapping details of violation."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("rule_name", "priority_tier", "root_cause", "impact_scope", "suggested_remediation", "original_message", mode="after")
+    @classmethod
+    def validate_non_empty_strings(cls, v: str) -> str:
+        """Validates that string values are not empty or only whitespace."""
+        if not v or not v.strip():
+            raise ValueError("Value must be a non-empty string.")
+        return v
+
+    @field_validator("details", mode="after")
+    @classmethod
+    def freeze_details(cls, v: Any) -> Any:
+        """Enforces immutable view protection on details mappings."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("details")
+    def serialize_details(self, details: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(details)
+
+
+class GovernanceViolationReport(BaseModel):
+    """Immutable report object containing all enriched governance violation items."""
+
+    report_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique report tracking ID.")
+    project_id: uuid.UUID = Field(..., description="Associated project identifier.")
+    commit_id: str = Field(..., min_length=1, description="Associated commit hash.")
+    generated_at: datetime = Field(..., description="Timezone-aware UTC timestamp when report was generated.")
+    violations: Tuple[EnrichedViolation, ...] = Field(
+        default_factory=tuple, description="Immutable tuple of enriched violations."
+    )
+    violations_by_rule: Mapping[str, Tuple[EnrichedViolation, ...]] = Field(
+        default_factory=dict, description="Grouped mapping of violations by rule name."
+    )
+    violations_by_severity: Mapping[str, int] = Field(
+        default_factory=dict, description="Violations count index by refined severity."
+    )
+    extra_info: Mapping[str, Any] = Field(
+        default_factory=dict, description="Extensible metadata properties map."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("commit_id", mode="after")
+    @classmethod
+    def validate_commit_id_non_empty(cls, v: str) -> str:
+        """Validates that commit hash value is not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("commit_id must be a non-empty string.")
+        return v
+
+    @field_validator("generated_at", mode="after")
+    @classmethod
+    def validate_generated_at_timezone(cls, v: datetime) -> datetime:
+        """Ensures creation timestamp is timezone-aware UTC."""
+        if v.tzinfo is None or v.tzinfo != timezone.utc:
+            raise ValueError("generated_at must be a timezone-aware UTC datetime.")
+        return v
+
+    @field_validator("violations_by_rule", "violations_by_severity", "extra_info", mode="after")
+    @classmethod
+    def freeze_mappings(cls, v: Any) -> Any:
+        """Enforces immutable view protection on mapping attributes."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("violations_by_rule", "violations_by_severity", "extra_info")
+    def serialize_mappings(self, value: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(value)
