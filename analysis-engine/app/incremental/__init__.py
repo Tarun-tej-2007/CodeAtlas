@@ -22,6 +22,7 @@ from app.incremental.interfaces import (
 from app.incremental.snapshot_service import RepositorySnapshotService
 from app.incremental.fingerprint import SHA256FingerprintGenerator
 from app.incremental.diff import SHA256SnapshotDifferenceEngine
+from app.incremental.impact import DependencyImpactAnalyzer
 
 __all__ = [
     "ChangeType",
@@ -41,4 +42,5 @@ __all__ = [
     "RepositorySnapshotService",
     "SHA256FingerprintGenerator",
     "SHA256SnapshotDifferenceEngine",
+    "DependencyImpactAnalyzer",
 ]
