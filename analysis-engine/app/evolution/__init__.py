@@ -31,6 +31,7 @@ from app.evolution.persistence import (
     ArchitectureEvolutionRepository,
     ArchitectureEvolutionPersistenceService,
 )
+from app.evolution.cache import execution_cache
 
 __all__ = [
     "ArchitecturalChangeType",
@@ -62,4 +63,5 @@ __all__ = [
     "ArchitectureEvolutionService",
     "ArchitectureEvolutionRepository",
     "ArchitectureEvolutionPersistenceService",
+    "execution_cache",
 ]

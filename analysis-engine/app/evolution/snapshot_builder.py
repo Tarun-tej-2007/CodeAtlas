@@ -42,6 +42,13 @@ class ArchitectureSnapshotService(ArchitectureSnapshotCalculator):
         if not commit_id or not commit_id.strip():
             raise EvolutionValidationError("commit_id must be a non-empty string.")
 
+        from app.evolution.cache import execution_cache
+        cache = execution_cache.get()
+        if cache is not None:
+            cache_key = f"snapshot:{commit_id}"
+            if cache_key in cache:
+                return cache[cache_key]
+
         # 1. Fetch analysis data from injected provider
         try:
             graph = self.provider.get_dependency_graph(commit_id)
@@ -181,10 +188,14 @@ class ArchitectureSnapshotService(ArchitectureSnapshotCalculator):
         }
 
         # 7. Construct and return snapshot DTO
-        return ArchitectureSnapshot(
+        snapshot = ArchitectureSnapshot(
             snapshot_id=uuid.uuid4(),
             commit_id=commit_id,
             timestamp=datetime.now(timezone.utc),
             layers=tuple(sorted_layers),
             components=components,
         )
+        if cache is not None:
+            cache_key = f"snapshot:{commit_id}"
+            cache[cache_key] = snapshot
+        return snapshot

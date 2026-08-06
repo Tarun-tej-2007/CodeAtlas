@@ -82,104 +82,110 @@ class ArchitectureEvolutionService:
         if request is None or not isinstance(request, EvolutionRequest):
             raise EvolutionValidationError("request parameter must be a valid EvolutionRequest.")
 
-        # 1. Build current target snapshot
-        try:
-            current_snapshot = self.snapshot_calculator.calculate_snapshot(request.target_commit)
-        except Exception as e:
-            raise EvolutionValidationError(f"Snapshot building failed: {e}") from e
+        from app.evolution.cache import execution_cache
+        token = execution_cache.set({})
 
-        # 2. Retrieve previous source snapshot from persistence
         try:
-            previous_snapshot = self.persistence.get_snapshot(request.source_commit)
-        except Exception as e:
-            raise EvolutionValidationError(
-                f"Failed to retrieve source snapshot for '{request.source_commit}': {e}"
-            ) from e
+            # 1. Build current target snapshot
+            try:
+                current_snapshot = self.snapshot_calculator.calculate_snapshot(request.target_commit)
+            except Exception as e:
+                raise EvolutionValidationError(f"Snapshot building failed: {e}") from e
 
-        # 3. Compare snapshots
-        # Support first-time analysis when previous snapshot is not found in database
-        if previous_snapshot is None:
-            empty_snapshot = ArchitectureSnapshot(
-                snapshot_id=uuid.uuid4(),
-                commit_id=request.source_commit,
-                timestamp=datetime.now(timezone.utc),
-                layers=(),
-                components={},
+            # 2. Retrieve previous source snapshot from persistence
+            try:
+                previous_snapshot = self.persistence.get_snapshot(request.source_commit)
+            except Exception as e:
+                raise EvolutionValidationError(
+                    f"Failed to retrieve source snapshot for '{request.source_commit}': {e}"
+                ) from e
+
+            # 3. Compare snapshots
+            # Support first-time analysis when previous snapshot is not found in database
+            if previous_snapshot is None:
+                empty_snapshot = ArchitectureSnapshot(
+                    snapshot_id=uuid.uuid4(),
+                    commit_id=request.source_commit,
+                    timestamp=datetime.now(timezone.utc),
+                    layers=(),
+                    components={},
+                )
+                try:
+                    changes = self.difference_engine.diff_snapshots(empty_snapshot, current_snapshot)
+                except Exception as e:
+                    raise EvolutionValidationError(f"Snapshot comparison failed: {e}") from e
+            else:
+                try:
+                    changes = self.difference_engine.diff_snapshots(previous_snapshot, current_snapshot)
+                except Exception as e:
+                    raise EvolutionValidationError(f"Snapshot comparison failed: {e}") from e
+
+            # 4. Count change categories
+            added_count = 0
+            removed_count = 0
+            modified_count = 0
+            unchanged_count = 0
+
+            for cf in changes:
+                if cf.change_type == ArchitecturalChangeType.ADDED:
+                    added_count += 1
+                elif cf.change_type == ArchitecturalChangeType.REMOVED:
+                    removed_count += 1
+                elif cf.change_type == ArchitecturalChangeType.MODIFIED:
+                    modified_count += 1
+                elif cf.change_type == ArchitecturalChangeType.UNCHANGED:
+                    unchanged_count += 1
+
+            summary = EvolutionSummary(
+                added_count=added_count,
+                removed_count=removed_count,
+                modified_count=modified_count,
+                unchanged_count=unchanged_count,
             )
+
+            # 5. Trend and risk analysis (Short-circuit if insufficient history)
+            trends = None
+            risk_report = None
+
             try:
-                changes = self.difference_engine.diff_snapshots(empty_snapshot, current_snapshot)
+                history = self.persistence.list_results()
             except Exception as e:
-                raise EvolutionValidationError(f"Snapshot comparison failed: {e}") from e
-        else:
-            try:
-                changes = self.difference_engine.diff_snapshots(previous_snapshot, current_snapshot)
-            except Exception as e:
-                raise EvolutionValidationError(f"Snapshot comparison failed: {e}") from e
+                raise EvolutionValidationError(f"Failed to load historical results: {e}") from e
 
-        # 4. Count change categories
-        added_count = 0
-        removed_count = 0
-        modified_count = 0
-        unchanged_count = 0
+            # Build current temporary EvolutionResult wrapper for trends
+            meta = EvolutionMetadata(
+                project_name=request.project_name,
+                source_commit=request.source_commit,
+                target_commit=request.target_commit,
+                created_at=datetime.now(timezone.utc),
+                status=EvolutionStatus.COMPLETED,
+            )
+            current_res = EvolutionResult(
+                evolution_id=uuid.uuid4(),
+                metadata=meta,
+                changes=changes,
+                summary=summary,
+            )
 
-        for cf in changes:
-            if cf.change_type == ArchitecturalChangeType.ADDED:
-                added_count += 1
-            elif cf.change_type == ArchitecturalChangeType.REMOVED:
-                removed_count += 1
-            elif cf.change_type == ArchitecturalChangeType.MODIFIED:
-                modified_count += 1
-            elif cf.change_type == ArchitecturalChangeType.UNCHANGED:
-                unchanged_count += 1
+            full_history = tuple(list(history) + [current_res])
 
-        summary = EvolutionSummary(
-            added_count=added_count,
-            removed_count=removed_count,
-            modified_count=modified_count,
-            unchanged_count=unchanged_count,
-        )
+            if previous_snapshot is not None and len(full_history) >= 2:
+                try:
+                    trends = self.trend_analyzer.analyze_trends(full_history)
+                    risk_report = self.risk_analyzer.analyze_risks(trends)
+                except Exception as e:
+                    raise EvolutionValidationError(f"Trend/Risk calculation failed: {e}") from e
 
-        # 5. Trend and risk analysis (Short-circuit if insufficient history)
-        trends = None
-        risk_report = None
-
-        try:
-            history = self.persistence.list_results()
-        except Exception as e:
-            raise EvolutionValidationError(f"Failed to load historical results: {e}") from e
-
-        # Build current temporary EvolutionResult wrapper for trends
-        meta = EvolutionMetadata(
-            project_name=request.project_name,
-            source_commit=request.source_commit,
-            target_commit=request.target_commit,
-            created_at=datetime.now(timezone.utc),
-            status=EvolutionStatus.COMPLETED,
-        )
-        current_res = EvolutionResult(
-            evolution_id=uuid.uuid4(),
-            metadata=meta,
-            changes=changes,
-            summary=summary,
-        )
-
-        full_history = tuple(list(history) + [current_res])
-
-        if previous_snapshot is not None and len(full_history) >= 2:
-            try:
-                trends = self.trend_analyzer.analyze_trends(full_history)
-                risk_report = self.risk_analyzer.analyze_risks(trends)
-            except Exception as e:
-                raise EvolutionValidationError(f"Trend/Risk calculation failed: {e}") from e
-
-        # 6. Package final result DTO
-        return ArchitectureEvolutionResult(
-            evolution_result_id=uuid.uuid4(),
-            request=request,
-            current_snapshot=current_snapshot,
-            previous_snapshot=previous_snapshot,
-            changes=changes,
-            summary=summary,
-            trends=trends,
-            risk_report=risk_report,
-        )
+            # 6. Package final result DTO
+            return ArchitectureEvolutionResult(
+                evolution_result_id=uuid.uuid4(),
+                request=request,
+                current_snapshot=current_snapshot,
+                previous_snapshot=previous_snapshot,
+                changes=changes,
+                summary=summary,
+                trends=trends,
+                risk_report=risk_report,
+            )
+        finally:
+            execution_cache.reset(token)

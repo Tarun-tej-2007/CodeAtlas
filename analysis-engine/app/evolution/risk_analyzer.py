@@ -32,6 +32,17 @@ class CodeAtlasArchitecturalRiskAnalyzer(RiskAnalyzer):
         if trend_result is None:
             raise EvolutionValidationError("trend_result parameter must not be None.")
 
+        from app.evolution.cache import execution_cache
+        cache = execution_cache.get()
+        if cache is not None:
+            trend_key = (
+                f"risks:{hash(trend_result.coupling_trend)}:{hash(trend_result.complexity_trend)}:"
+                f"{hash(trend_result.tech_debt_trend)}:{hash(trend_result.quality_trend)}:"
+                f"{hash(trend_result.layer_stability)}:{hash(trend_result.module_growth)}"
+            )
+            if trend_key in cache:
+                return cache[trend_key]
+
         # Validate trend list consistencies (e.g. check lengths)
         lengths = {
             len(trend_result.coupling_trend),
@@ -217,9 +228,17 @@ class CodeAtlasArchitecturalRiskAnalyzer(RiskAnalyzer):
 
         overall_score = round(max([r.score for r in risks]), 3) if risks else 0.0
 
-        return ArchitecturalRiskReport(
+        report = ArchitecturalRiskReport(
             report_id=uuid.uuid4(),
             generated_at=datetime.now(timezone.utc),
             overall_risk_score=overall_score,
             risks=tuple(risks),
         )
+        if cache is not None:
+            trend_key = (
+                f"risks:{hash(trend_result.coupling_trend)}:{hash(trend_result.complexity_trend)}:"
+                f"{hash(trend_result.tech_debt_trend)}:{hash(trend_result.quality_trend)}:"
+                f"{hash(trend_result.layer_stability)}:{hash(trend_result.module_growth)}"
+            )
+            cache[trend_key] = report
+        return report
