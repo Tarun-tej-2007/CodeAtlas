@@ -1,195 +1,169 @@
-"""Unit tests for the AI Recommendation Engine."""
+"""Unit tests for the RecommendationGeneratorService component."""
 
 import unittest
-from concurrent.futures import ThreadPoolExecutor
-from pydantic import ValidationError
+import uuid
+from datetime import datetime, timezone
 
-from app.analysis import (
-    AnalysisSeverity,
-    AnalysisType,
-    RecommendationStatus,
-    AnalysisFinding,
-    AnalysisRecommendation,
-    AnalysisSummary,
-    AnalysisResult,
-    RecommendationEngine,
-    RecommendationStrategy,
+from app.ai import (
+    AIAnalysisType,
+    AIMetadata,
+    AIProvider,
+    AIRequest,
+    AIValidationError,
+    RecommendationCategory,
+    RecommendationPriority,
 )
-
-
-class CustomTestStrategy(RecommendationStrategy):
-    """Custom strategy to verify extensibility."""
-
-    def can_handle(self, finding: AnalysisFinding) -> bool:
-        return finding.rule_id == "custom-rule"
-
-    def generate(self, finding: AnalysisFinding) -> AnalysisRecommendation:
-        return AnalysisRecommendation(
-            id=f"rec-custom-{finding.id}",
-            finding_id=finding.id,
-            remediation="Apply custom patch",
-            status=RecommendationStatus.OPEN,
-            metadata={"priority": "high"}
-        )
+from app.ai.recommendation_engine import RecommendationGeneratorService
 
 
 class TestRecommendationEngine(unittest.TestCase):
-    """Verifies strategy mapping, duplicate deduplication, determinism, and extensibility."""
+    """Verifies that recommendation parsing is stateless, deterministic, and handles malformed inputs."""
 
     def setUp(self) -> None:
-        self.engine = RecommendationEngine()
-        self.summary = AnalysisSummary(total_findings=0, findings_by_severity={}, duration_ms=10)
-
-    def test_empty_analysis_results(self) -> None:
-        empty_res = AnalysisResult(
-            id="run-1", analysis_type=AnalysisType.DESIGN, summary=self.summary, findings=[]
+        self.service = RecommendationGeneratorService()
+        self.project_id = uuid.uuid4()
+        self.commit_id = "commit-abc-123"
+        self.time_utc = datetime(2026, 8, 7, 10, 0, 0, tzinfo=timezone.utc)
+        self.metadata = AIMetadata(
+            author="Lead Architect",
+            created_at=self.time_utc,
+            provider=AIProvider.MOCK,
+            model_name="mock-model",
+            temperature=0.0,
+            extra_info={},
         )
-        res = self.engine.generate_recommendations(empty_res)
-        self.assertEqual(res.recommendations, [])
-        self.assertEqual(res.findings, [])
-
-    def test_single_finding(self) -> None:
-        finding = AnalysisFinding(
-            id="f-1",
-            title="Empty",
-            description="Empty repository",
-            severity=AnalysisSeverity.INFO,
-            file_path="root",
-            start_line=1,
-            end_line=1,
-            rule_id="repo-empty"
-        )
-        res = AnalysisResult(
-            id="run-1",
-            analysis_type=AnalysisType.DESIGN,
-            summary=AnalysisSummary(total_findings=1, findings_by_severity={"info": 1}),
-            findings=[finding]
+        self.request = AIRequest(
+            project_id=self.project_id,
+            commit_id=self.commit_id,
+            analysis_type=AIAnalysisType.FULL_ARCHITECTURE_REVIEW,
+            metadata=self.metadata,
         )
 
-        res_opt = self.engine.generate_recommendations(res)
-        self.assertEqual(len(res_opt.recommendations), 1)
-        self.assertEqual(res_opt.recommendations[0].finding_id, "f-1")
-        self.assertEqual(
-            res_opt.recommendations[0].remediation,
-            "Populate the repository with source files to begin code quality analysis."
-        )
-        self.assertEqual(res_opt.recommendations[0].status, RecommendationStatus.OPEN)
+    def test_invalid_parameters(self) -> None:
+        """Verifies fail-fast validation on missing inputs."""
+        with self.assertRaises(AIValidationError):
+            self.service.generate_recommendations(None, "[]")
 
-    def test_multiple_findings_and_priorities(self) -> None:
-        # Construct multi-language and afferent coupling findings
-        f1 = AnalysisFinding(
-            id="f-1", title="Multi", description="...", severity=AnalysisSeverity.WARNING,
-            file_path="root", start_line=1, end_line=1, rule_id="repo-multi-language"
-        )
-        f2 = AnalysisFinding(
-            id="f-2", title="Afferent", description="...", severity=AnalysisSeverity.WARNING,
-            file_path="src/core.py", start_line=10, end_line=10, rule_id="symbol-coupling-afferent"
-        )
-        res = AnalysisResult(
-            id="run-1",
-            analysis_type=AnalysisType.DESIGN,
-            summary=AnalysisSummary(total_findings=2, findings_by_severity={"warning": 2}),
-            findings=[f1, f2]
-        )
+        with self.assertRaises(AIValidationError):
+            self.service.generate_recommendations(self.request, None)
 
-        res_opt = self.engine.generate_recommendations(res)
-        self.assertEqual(len(res_opt.recommendations), 2)
-        # Recommendation IDs must be sorted alphabetically
-        rec_ids = [r.id for r in res_opt.recommendations]
-        self.assertEqual(rec_ids, sorted(rec_ids))
+    def test_empty_analysis(self) -> None:
+        """Verifies empty raw completion returns empty tuple."""
+        recs = self.service.generate_recommendations(self.request, "   ")
+        self.assertEqual(recs, ())
 
-        # Check strategy assignments
-        self.assertTrue(any("rec-multi" in r.id for r in res_opt.recommendations))
-        self.assertTrue(any("rec-afferent" in r.id for r in res_opt.recommendations))
+    def test_single_recommendation_json(self) -> None:
+        """Verifies parsing a single recommendation in JSON format."""
+        raw = """
+        {
+            "title": "Use Constructor Injection",
+            "description": "Replace field injection with constructor dependency injection.",
+            "category": "architecture",
+            "priority": "critical",
+            "affected_files": ["src\\\\app.py"],
+            "confidence_score": 0.95,
+            "reasoning": "Constructor DI guarantees immutability.",
+            "affected_components": ["API Layer"],
+            "suggested_actions": ["Modify __init__ to accept database dependency."]
+        }
+        """
+        recs = self.service.generate_recommendations(self.request, raw)
 
-    def test_duplicate_recommendation_deduplication(self) -> None:
-        # Two identical findings producing the same recommendation
-        f1 = AnalysisFinding(
-            id="f-1", title="Empty", description="Empty repository", severity=AnalysisSeverity.INFO,
-            file_path="root", start_line=1, end_line=1, rule_id="repo-empty"
-        )
-        f2 = AnalysisFinding(
-            id="f-1", title="Empty", description="Empty repository", severity=AnalysisSeverity.INFO,
-            file_path="root", start_line=1, end_line=1, rule_id="repo-empty"
-        )
-        res = AnalysisResult(
-            id="run-1",
-            analysis_type=AnalysisType.DESIGN,
-            summary=AnalysisSummary(total_findings=2, findings_by_severity={"info": 2}),
-            findings=[f1, f2]
-        )
+        self.assertEqual(len(recs), 1)
+        r = recs[0]
+        self.assertEqual(r.title, "Use Constructor Injection")
+        self.assertEqual(r.category, RecommendationCategory.ARCHITECTURE)
+        self.assertEqual(r.priority, RecommendationPriority.CRITICAL)
+        self.assertEqual(r.affected_files, ("src/app.py",))
+        self.assertEqual(r.confidence_score, 0.95)
+        self.assertEqual(r.reasoning, "Constructor DI guarantees immutability.")
+        self.assertEqual(r.affected_components, ("API Layer",))
+        self.assertEqual(r.suggested_actions, ("Modify __init__ to accept database dependency.",))
 
-        res_opt = self.engine.generate_recommendations(res)
-        # Deduplication should yield exactly 1 recommendation DTO
-        self.assertEqual(len(res_opt.recommendations), 1)
+    def test_multiple_recommendations_and_duplicate_elimination(self) -> None:
+        """Verifies duplicate recommendations are removed and multiple recommendations are parsed."""
+        raw = """
+        [
+            {
+                "title": "A",
+                "description": "Desc A",
+                "category": "architecture",
+                "priority": "critical"
+            },
+            {
+                "title": "A",
+                "description": "Desc A duplicate",
+                "category": "architecture",
+                "priority": "critical"
+            },
+            {
+                "title": "B",
+                "description": "Desc B",
+                "category": "refactoring",
+                "priority": "medium"
+            }
+        ]
+        """
+        recs = self.service.generate_recommendations(self.request, raw)
 
-    def test_extensibility_with_custom_strategies(self) -> None:
-        custom_engine = RecommendationEngine(strategies=[CustomTestStrategy()])
-        finding = AnalysisFinding(
-            id="f-custom", title="Custom", description="...", severity=AnalysisSeverity.WARNING,
-            file_path="src/main.py", start_line=1, end_line=1, rule_id="custom-rule"
-        )
-        res = AnalysisResult(
-            id="run-1",
-            analysis_type=AnalysisType.DESIGN,
-            summary=AnalysisSummary(total_findings=1, findings_by_severity={"warning": 1}),
-            findings=[finding]
-        )
+        self.assertEqual(len(recs), 2)
+        titles = [r.title for r in recs]
+        self.assertIn("A", titles)
+        self.assertIn("B", titles)
 
-        res_opt = custom_engine.generate_recommendations(res)
-        self.assertEqual(len(res_opt.recommendations), 1)
-        self.assertEqual(res_opt.recommendations[0].id, "rec-custom-f-custom")
-        self.assertEqual(res_opt.recommendations[0].remediation, "Apply custom patch")
+    def test_malformed_recommendation_handling(self) -> None:
+        """Verifies malformed entries or JSON syntax errors are ignored gracefully."""
+        raw = """
+        [
+            {
+                "title": "Malformed No Category",
+                "description": "Missing category and priority."
+            },
+            {
+                "title": "Valid Rec",
+                "description": "Standard valid details.",
+                "category": "security",
+                "priority": "high"
+            }
+        ]
+        """
+        recs = self.service.generate_recommendations(self.request, raw)
 
-    def test_serialization_and_immutability(self) -> None:
-        finding = AnalysisFinding(
-            id="f-1", title="Empty", description="Empty repository", severity=AnalysisSeverity.INFO,
-            file_path="root", start_line=1, end_line=1, rule_id="repo-empty"
-        )
-        res = AnalysisResult(
-            id="run-1",
-            analysis_type=AnalysisType.DESIGN,
-            summary=AnalysisSummary(total_findings=1, findings_by_severity={"info": 1}),
-            findings=[finding]
-        )
-        res_opt = self.engine.generate_recommendations(res)
+        self.assertEqual(len(recs), 1)
+        self.assertEqual(recs[0].title, "Valid Rec")
 
-        # Immutability: assert we cannot modify recommendations list directly
-        with self.assertRaises((ValidationError, TypeError)):
-            res_opt.recommendations = []  # type: ignore
+    def test_deterministic_ordering(self) -> None:
+        """Verifies sorted order constraints: priority (highest first), category, then title."""
+        raw = """
+        [
+            {
+                "title": "Z Class",
+                "description": "Z desc",
+                "category": "architecture",
+                "priority": "medium"
+            },
+            {
+                "title": "A Class",
+                "description": "A desc",
+                "category": "architecture",
+                "priority": "medium"
+            },
+            {
+                "title": "Critical issue",
+                "description": "Crit desc",
+                "category": "security",
+                "priority": "critical"
+            }
+        ]
+        """
+        recs = self.service.generate_recommendations(self.request, raw)
 
-        # Serialization
-        dump = res_opt.model_dump()
-        self.assertEqual(len(dump["recommendations"]), 1)
-        self.assertEqual(dump["recommendations"][0]["finding_id"], "f-1")
-
-    def test_repeated_execution_and_concurrency(self) -> None:
-        finding = AnalysisFinding(
-            id="f-1", title="Empty", description="Empty repository", severity=AnalysisSeverity.INFO,
-            file_path="root", start_line=1, end_line=1, rule_id="repo-empty"
-        )
-        res = AnalysisResult(
-            id="run-1",
-            analysis_type=AnalysisType.DESIGN,
-            summary=AnalysisSummary(total_findings=1, findings_by_severity={"info": 1}),
-            findings=[finding]
-        )
-
-        # Determinism check
-        opt1 = self.engine.generate_recommendations(res)
-        opt2 = self.engine.generate_recommendations(res)
-        self.assertEqual(opt1, opt2)
-
-        # Thread safety stress test
-        def run_rec():
-            return self.engine.generate_recommendations(res)
-
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            futures = [executor.submit(run_rec) for _ in range(20)]
-            results = [f.result() for f in futures]
-
-        for r in results:
-            self.assertEqual(r, opt1)
+        self.assertEqual(len(recs), 3)
+        # Critical priority should come first
+        self.assertEqual(recs[0].title, "Critical issue")
+        # Then same priority (medium), sorted by title alphabetically ("A Class" before "Z Class")
+        self.assertEqual(recs[1].title, "A Class")
+        self.assertEqual(recs[2].title, "Z Class")
 
 
 if __name__ == "__main__":

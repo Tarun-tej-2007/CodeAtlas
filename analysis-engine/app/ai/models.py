@@ -239,6 +239,10 @@ class AIRecommendation(BaseModel):
     affected_files: Tuple[str, ...] = Field(default_factory=tuple, description="Set of target files affected.")
     suggested_fix: Optional[str] = Field(default=None, description="Remediation code snippet or suggestion.")
     remediation_effort: Optional[str] = Field(default=None, description="Optional description of estimated workload.")
+    confidence_score: float = Field(default=1.0, ge=0.0, le=1.0, description="Confidence score from 0.0 to 1.0.")
+    reasoning: Optional[str] = Field(default=None, description="The rationale for the recommendation.")
+    affected_components: Tuple[str, ...] = Field(default_factory=tuple, description="Subsystem components impacted.")
+    suggested_actions: Tuple[str, ...] = Field(default_factory=tuple, description="Specific remediation action steps.")
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
