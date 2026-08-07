@@ -142,6 +142,122 @@ class DecisionPersistence(ABC):
         """
         pass
 
+    @abstractmethod
+    def save_trace_graph(self, project_id: uuid.UUID, graph: DecisionTraceGraph) -> None:
+        """Saves a decision trace graph.
+
+        Args:
+            project_id: Associated project UUID.
+            graph: The trace graph.
+
+        Raises:
+            DecisionPersistenceError: If save fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_trace_graph(self, project_id: uuid.UUID, commit_id: str) -> Optional[DecisionTraceGraph]:
+        """Retrieves a decision trace graph.
+
+        Args:
+            project_id: Associated project UUID.
+            commit_id: Associated Git commit hash.
+
+        Returns:
+            DecisionTraceGraph if found, else None.
+
+        Raises:
+            DecisionPersistenceError: If query fails.
+        """
+        pass
+
+    @abstractmethod
+    def save_drift_report(self, project_id: uuid.UUID, report: DecisionDriftReport) -> None:
+        """Saves a decision drift report.
+
+        Args:
+            project_id: Associated project UUID.
+            report: The drift report.
+
+        Raises:
+            DecisionPersistenceError: If save fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_drift_report(self, project_id: uuid.UUID, commit_id: str) -> Optional[DecisionDriftReport]:
+        """Retrieves a decision drift report.
+
+        Args:
+            project_id: Associated project UUID.
+            commit_id: Associated Git commit hash.
+
+        Returns:
+            DecisionDriftReport if found, else None.
+
+        Raises:
+            DecisionPersistenceError: If query fails.
+        """
+        pass
+
+    @abstractmethod
+    def save_health_report(self, project_id: uuid.UUID, report: DecisionHealthReport) -> None:
+        """Saves a decision health report.
+
+        Args:
+            project_id: Associated project UUID.
+            report: The health report.
+
+        Raises:
+            DecisionPersistenceError: If save fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_health_report(self, project_id: uuid.UUID, commit_id: str) -> Optional[DecisionHealthReport]:
+        """Retrieves a decision health report.
+
+        Args:
+            project_id: Associated project UUID.
+            commit_id: Associated Git commit hash.
+
+        Returns:
+            DecisionHealthReport if found, else None.
+
+        Raises:
+            DecisionPersistenceError: If query fails.
+        """
+        pass
+
+    @abstractmethod
+    def save_analysis_result(self, project_id: uuid.UUID, result: DecisionAnalysisResult) -> None:
+        """Saves a decision analysis result.
+
+        Args:
+            project_id: Associated project UUID.
+            result: The analysis result.
+
+        Raises:
+            DecisionPersistenceError: If save fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_analysis_result(self, project_id: uuid.UUID, commit_id: str) -> Optional[DecisionAnalysisResult]:
+        """Retrieves a decision analysis result.
+
+        Args:
+            project_id: Associated project UUID.
+            commit_id: Associated Git commit hash.
+
+        Returns:
+            DecisionAnalysisResult if found, else None.
+
+        Raises:
+            DecisionPersistenceError: If query fails.
+        """
+        pass
+
 
 class DecisionDriftAnalyzer(ABC):
     """Abstract interface defining capabilities for detecting decision divergence drift."""
@@ -248,5 +364,52 @@ class DecisionIntelligenceOrchestrator(ABC):
             DecisionPersistenceError: For database/infrastructure save/load exceptions.
             DecisionTraceabilityError: For traceback resolution failures.
             DecisionError: For general subsystem failures.
+        """
+        pass
+
+
+class DecisionRepository(ABC):
+    """Abstract interface defining data storage/retrieval operations for serialized decision artifacts."""
+
+    @abstractmethod
+    def save_data(self, key: str, data: dict) -> None:
+        """Saves a data dictionary under a given key.
+
+        Args:
+            key: Target unique storage key string.
+            data: Payload dictionary to save.
+
+        Raises:
+            Exception: If storage fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_data(self, key: str) -> Optional[dict]:
+        """Retrieves a data dictionary by key.
+
+        Args:
+            key: Target unique storage key string.
+
+        Returns:
+            The data dict if found, else None.
+
+        Raises:
+            Exception: If retrieval fails.
+        """
+        pass
+
+    @abstractmethod
+    def list_keys_starting_with(self, prefix: str) -> Tuple[str, ...]:
+        """Lists keys matching a given prefix.
+
+        Args:
+            prefix: Key prefix to filter by.
+
+        Returns:
+            An immutable tuple of matching keys.
+
+        Raises:
+            Exception: If list query fails.
         """
         pass
