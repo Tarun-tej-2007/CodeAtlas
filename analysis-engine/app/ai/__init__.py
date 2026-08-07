@@ -1,31 +1,65 @@
-"""CodeAtlas AI Context Analysis package.
+"""AI Context and Analysis package.
 
 Establishes structural enums, custom exceptions, model definitions, and pipeline
-interfaces for constructing AI context packages.
+interfaces for constructing AI context packages and executing AI reviews.
 """
 
+# Re-export original enums
 from app.ai.enums import (
-    ContextType,
-    ContextPriority,
-    SummaryGranularity,
     AIAnalysisCategory,
+    AIAnalysisStatus,
+    AIAnalysisType,
+    AIProvider,
+    ContextPriority,
+    ContextType,
+    RecommendationCategory,
+    RecommendationPriority,
+    SummaryGranularity,
 )
+
+# Re-export exceptions
 from app.ai.exceptions import (
     AIContextError,
-    AIContextValidationError,
     AIContextModelError,
+    AIContextValidationError,
+    AIError,
+    AIPersistenceError,
+    AIProviderError,
+    AIValidationError,
+    PromptGenerationError,
 )
+
+# Re-export original models & new models
 from app.ai.models import (
-    ContextSection,
-    SymbolContext,
-    RepositoryContext,
+    AIAnalysis,
+    AIContext,
     AIContextResult,
+    AIMetadata,
+    AIRecommendation,
+    AIRequest,
+    AIResult,
+    AIUsageStatistics,
+    ContextSection,
+    PromptContext,
+    RepositoryContext,
+    SymbolContext,
 )
-from app.ai.context_builder import AIContextBuilder
+
+# Re-export original builders/composer/cache
+from app.ai.context_builder import AIContextBuilder as OriginalAIContextBuilder
 from app.ai.repository_context import RepositoryContextBuilder
 from app.ai.symbol_context import SymbolContextBuilder
 from app.ai.context_composer import AIContextComposer
 from app.ai.cache import ContextLookupCache
+
+# Re-export new interfaces
+from app.ai.interfaces import (
+    AIAnalysisPersistence,
+    AIContextBuilder,  # Sprint 30 AIContextBuilder interface
+    LLMProvider,
+    PromptBuilder,
+    RecommendationGenerator,
+)
 
 __all__ = [
     # Enums
@@ -33,23 +67,44 @@ __all__ = [
     "ContextPriority",
     "SummaryGranularity",
     "AIAnalysisCategory",
+    "AIProvider",
+    "AIAnalysisStatus",
+    "RecommendationPriority",
+    "RecommendationCategory",
+    "AIAnalysisType",
     # Exceptions
+    "AIError",
+    "AIValidationError",
+    "AIProviderError",
     "AIContextError",
     "AIContextValidationError",
     "AIContextModelError",
+    "AIPersistenceError",
+    "PromptGenerationError",
     # Models
     "ContextSection",
     "SymbolContext",
     "RepositoryContext",
     "AIContextResult",
-    # Builder Abstract Interface
-    "AIContextBuilder",
-    # Repository Context Builder
+    "AIMetadata",
+    "AIRequest",
+    "AIContext",
+    "PromptContext",
+    "AIRecommendation",
+    "AIUsageStatistics",
+    "AIAnalysis",
+    "AIResult",
+    # Original interface
+    "OriginalAIContextBuilder",
+    # Repository context builders
     "RepositoryContextBuilder",
-    # Symbol Context Builder
     "SymbolContextBuilder",
-    # Context Composer
     "AIContextComposer",
-    # Performance Optimization Cache
     "ContextLookupCache",
+    # New interfaces
+    "AIContextBuilder",
+    "PromptBuilder",
+    "LLMProvider",
+    "RecommendationGenerator",
+    "AIAnalysisPersistence",
 ]
