@@ -5,11 +5,26 @@ from abc import ABC, abstractmethod
 from typing import Mapping, Optional, Tuple
 
 from app.decision.enums import DecisionCategory, DecisionPriority, DecisionStatus
-from app.decision.models import ArchitectureDecision, DecisionMetadata, DecisionRelationship
+from app.decision.models import ArchitectureDecision, DecisionMetadata, DecisionRelationship, DecisionRequest
 
 
 class DecisionBuilder(ABC):
     """Abstract interface defining operations for building and normalizing Architecture Decisions."""
+
+    @abstractmethod
+    def build_from_request(self, request: DecisionRequest) -> ArchitectureDecision:
+        """Constructs and normalizes an ArchitectureDecision from a DecisionRequest.
+
+        Args:
+            request: The decision registration request.
+
+        Returns:
+            The normalized immutable ArchitectureDecision.
+
+        Raises:
+            DecisionValidationError: If validation fails.
+        """
+        pass
 
     @abstractmethod
     def build_decision(

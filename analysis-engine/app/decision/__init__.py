@@ -24,6 +24,7 @@ from app.decision.models import (
     DecisionRequest,
     DecisionResult,
 )
+from app.decision.decision_builder import DecisionBuilderService
 
 __all__ = [
     "DecisionStatus",
@@ -42,4 +43,5 @@ __all__ = [
     "DecisionMetadata",
     "DecisionRequest",
     "DecisionResult",
+    "DecisionBuilderService",
 ]
