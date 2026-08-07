@@ -326,3 +326,101 @@ class AIResult(BaseModel):
     @field_serializer("extra_info")
     def serialize_extra_info(self, extra_info: Any) -> dict:
         return dict(extra_info)
+
+
+class ArchitectureStrength(BaseModel):
+    """Immutable model capturing a structural or quality strength of the architecture."""
+
+    title: str = Field(..., description="Short title describing the strength.")
+    description: str = Field(..., description="Detailed explanation of the strength.")
+    category: str = Field(..., description="Classification category (e.g. layering, cohesion).")
+    affected_components: Tuple[str, ...] = Field(default_factory=tuple, description="Impacted components.")
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("title", "description", "category")
+    @classmethod
+    def validate_non_empty(cls, v: str) -> str:
+        return _validate_non_empty_str(v)
+
+
+class ArchitectureWeakness(BaseModel):
+    """Immutable model capturing a structural smell or violation."""
+
+    title: str = Field(..., description="Short title describing the weakness.")
+    description: str = Field(..., description="Detailed explanation of the weakness.")
+    severity: str = Field(..., description="Severity level classification (e.g. critical, warning).")
+    affected_components: Tuple[str, ...] = Field(default_factory=tuple, description="Impacted components.")
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("title", "description", "severity")
+    @classmethod
+    def validate_non_empty(cls, v: str) -> str:
+        return _validate_non_empty_str(v)
+
+
+class ArchitectureRisk(BaseModel):
+    """Immutable model representing an active design risk in the system."""
+
+    title: str = Field(..., description="Short title describing the risk.")
+    description: str = Field(..., description="Detailed description of potential impact.")
+    likelihood: str = Field(..., description="Likelihood probability description (e.g. high, medium, low).")
+    impact: str = Field(..., description="Impact scale classification (e.g. high, medium, low).")
+    mitigation: str = Field(..., description="Recommended mitigation path.")
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("title", "description", "likelihood", "impact", "mitigation")
+    @classmethod
+    def validate_non_empty(cls, v: str) -> str:
+        return _validate_non_empty_str(v)
+
+
+class RefactoringRoadmap(BaseModel):
+    """Immutable model representing target refactoring sequences."""
+
+    phases: Tuple[str, ...] = Field(default_factory=tuple, description="Sequential phase execution steps.")
+    estimated_workload: str = Field(..., description="Overall workload estimation scale (e.g. low, medium, high).")
+    prerequisites: Tuple[str, ...] = Field(default_factory=tuple, description="Prerequisite tasks needed.")
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("estimated_workload")
+    @classmethod
+    def validate_non_empty(cls, v: str) -> str:
+        return _validate_non_empty_str(v)
+
+
+class ArchitectureReview(BaseModel):
+    """Immutable model synthesizing structured reviews from AI Analysis and context."""
+
+    review_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique review ID.")
+    project_id: uuid.UUID = Field(..., description="Associated project UUID.")
+    commit_id: str = Field(..., description="Associated commit hash.")
+    executive_summary: str = Field(..., description="Summary assessment text.")
+    health_score: float = Field(default=100.0, ge=0.0, le=100.0, description="Evaluated health score from 0.0 to 100.0.")
+    strengths: Tuple[ArchitectureStrength, ...] = Field(default_factory=tuple, description="Identified strengths.")
+    weaknesses: Tuple[ArchitectureWeakness, ...] = Field(default_factory=tuple, description="Identified weaknesses.")
+    risks: Tuple[ArchitectureRisk, ...] = Field(default_factory=tuple, description="Identified architectural risks.")
+    roadmap: RefactoringRoadmap = Field(..., description="Refactoring sequencing recommendations.")
+    immediate_actions: Tuple[str, ...] = Field(default_factory=tuple, description="Immediate fix tasks.")
+    long_term_recommendations: Tuple[str, ...] = Field(default_factory=tuple, description="Longer term design suggestions.")
+    extra_info: Mapping[str, Any] = Field(default_factory=dict, description="Custom contextual tracking metadata.")
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("commit_id", "executive_summary")
+    @classmethod
+    def validate_non_empty_strings(cls, v: str) -> str:
+        return _validate_non_empty_str(v)
+
+    @field_validator("extra_info")
+    @classmethod
+    def freeze_extra_info(cls, v: Any) -> Any:
+        return MappingProxyType(dict(v))
+
+    @field_serializer("extra_info")
+    def serialize_extra_info(self, extra_info: Any) -> dict:
+        return dict(extra_info)
+

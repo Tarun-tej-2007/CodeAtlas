@@ -43,6 +43,11 @@ from app.ai.models import (
     PromptContext,
     RepositoryContext,
     SymbolContext,
+    ArchitectureReview,
+    ArchitectureStrength,
+    ArchitectureWeakness,
+    ArchitectureRisk,
+    RefactoringRoadmap,
 )
 
 # Re-export original builders/composer/cache
@@ -59,10 +64,12 @@ from app.ai.interfaces import (
     LLMProvider,
     PromptBuilder,
     RecommendationGenerator,
+    ArchitectureReviewer,
 )
 from app.ai.context_aggregation import AIContextAggregationService
 from app.ai.prompt_builder import PromptBuilderService
 from app.ai.recommendation_engine import RecommendationGeneratorService
+from app.ai.architecture_review import ArchitectureReviewService
 
 __all__ = [
     # Enums
@@ -97,6 +104,11 @@ __all__ = [
     "AIUsageStatistics",
     "AIAnalysis",
     "AIResult",
+    "ArchitectureReview",
+    "ArchitectureStrength",
+    "ArchitectureWeakness",
+    "ArchitectureRisk",
+    "RefactoringRoadmap",
     # Original interface
     "OriginalAIContextBuilder",
     # Repository context builders
@@ -110,8 +122,10 @@ __all__ = [
     "LLMProvider",
     "RecommendationGenerator",
     "AIAnalysisPersistence",
+    "ArchitectureReviewer",
     # New services
     "AIContextAggregationService",
     "PromptBuilderService",
     "RecommendationGeneratorService",
+    "ArchitectureReviewService",
 ]
