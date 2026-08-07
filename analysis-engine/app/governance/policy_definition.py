@@ -49,6 +49,16 @@ class PolicyDefinitionService:
         norm_name = name.strip()
         norm_version = version.strip()
 
+        # Check execution cache
+        from app.governance.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            extra_items = tuple(sorted(extra_info.items())) if extra_info else ()
+            cache_key = make_hashable(("policy_norm", norm_name, norm_version, category, rules, extra_items))
+            if cache_key in cache:
+                return cache[cache_key]
+
         # 1. Validate rules uniqueness and normalize rule identifiers
         seen_names = set()
         normalized_rules = []
@@ -105,11 +115,16 @@ class PolicyDefinitionService:
         )
 
         # 5. Build and return GovernancePolicy DTO
-        return GovernancePolicy(
+        policy = GovernancePolicy(
             policy_id=policy_id,
             metadata=metadata,
             rules=tuple(normalized_rules),
         )
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = policy
+
+        return policy
 
     def _validate_contradictory_rules(self, rules: List[PolicyRule]) -> None:
         """Validates that there are no contradictory constraints between rules in the policy."""

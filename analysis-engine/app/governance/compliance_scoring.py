@@ -35,6 +35,15 @@ class ComplianceScoringService(ComplianceScorer):
         if not isinstance(violation_report, GovernanceViolationReport):
             raise GovernanceValidationError("violation_report must be a valid GovernanceViolationReport instance.")
 
+        # Check execution cache
+        from app.governance.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable(("calculate_compliance", violation_report, history))
+            if cache_key in cache:
+                return cache[cache_key]
+
         # 1. Base Score setup
         overall_score = 100.0
         category_scores: Dict[str, float] = {
@@ -90,28 +99,39 @@ class ComplianceScoringService(ComplianceScorer):
         # 4. Trend-aware compliance adjustments
         trend_adjustment = 0.0
         if history:
-            # Count historical violation numbers
-            hist_violation_counts = []
-            for h_rep in history:
-                # Support both ComplianceReport and other types
-                if hasattr(h_rep, "compliance_score"):
-                    # Extract from nested ComplianceScore DTO if it's a ComplianceReport
-                    pass
-                elif hasattr(h_rep, "violations"):
-                    hist_violation_counts.append(len(h_rep.violations))
+            prev_scores = []
+            for item in history:
+                if hasattr(item, "compliance_score") and hasattr(item.compliance_score, "overall_score"):
+                    prev_scores.append(item.compliance_score.overall_score)
+                elif isinstance(item, dict) and "compliance_score" in item:
+                    prev_scores.append(item["compliance_score"].get("overall_score", 100.0))
 
-            if hist_violation_counts:
-                avg_violations = sum(hist_violation_counts) / len(hist_violation_counts)
-                current_violations = len(violation_report.violations)
-                if current_violations < avg_violations:
-                    trend_adjustment = 5.0  # Positive improvement adjustment bonus
-                elif current_violations > avg_violations:
-                    trend_adjustment = -5.0  # Negative regression adjustment penalty
+            if prev_scores:
+                # Compare against the average of recent historical runs
+                avg_history = sum(prev_scores) / len(prev_scores)
+                diff = overall_score - avg_history
+                # Cap adjustment to maximum +/- 5.0 points
+                trend_adjustment = round(max(-5.0, min(5.0, diff * 0.1)), 2)
+            else:
+                # Count historical violation numbers
+                hist_violation_counts = []
+                for h_rep in history:
+                    if hasattr(h_rep, "violations"):
+                        hist_violation_counts.append(len(h_rep.violations))
 
-        # Apply trend adjustment to overall score
+                if hist_violation_counts:
+                    avg_violations = sum(hist_violation_counts) / len(hist_violation_counts)
+                    current_violations = len(violation_report.violations)
+                    if current_violations < avg_violations:
+                        trend_adjustment = 5.0  # Positive improvement adjustment bonus
+                    elif current_violations > avg_violations:
+                        trend_adjustment = -5.0  # Negative regression adjustment penalty
+
         final_overall_score = max(0.0, min(100.0, overall_score + trend_adjustment))
 
-        # 5. Policy coverage calculations
+        # Deterministic sorting of category scores dict
+        sorted_category_scores = {k: category_scores[k] for k in sorted(category_scores.keys())}
+
         # Coverage drops as rule violations increase
         policy_coverage = max(0.0, 100.0 - (5.0 * len(violation_report.violations_by_rule)))
 
@@ -126,7 +146,7 @@ class ComplianceScoringService(ComplianceScorer):
         )
 
         # 7. Construct and return ComplianceReport DTO
-        return ComplianceReport(
+        report = ComplianceReport(
             report_id=uuid.uuid4(),
             project_id=violation_report.project_id,
             commit_id=violation_report.commit_id,
@@ -135,3 +155,8 @@ class ComplianceScoringService(ComplianceScorer):
             violation_report_id=violation_report.report_id,
             extra_info={},
         )
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = report
+
+        return report
