@@ -2,7 +2,7 @@
 
 import uuid
 from abc import ABC, abstractmethod
-from typing import Mapping, Optional, Tuple
+from typing import Any, Mapping, Optional, Tuple
 
 from app.decision.enums import DecisionCategory, DecisionPriority, DecisionStatus
 from app.decision.models import (
