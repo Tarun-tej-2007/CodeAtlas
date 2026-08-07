@@ -362,16 +362,4 @@ Contributions are welcome.
 
 If you would like to improve CodeAtlas, please fork the repository, create a feature branch, implement your changes, add appropriate tests, and submit a pull request.
 
----
 
-# License
-
-This project is licensed under the MIT License.
-
----
-
-# Author
-
-**Tarun Tej**
-
-GitHub: https://github.com/Tarun-tej-2007
