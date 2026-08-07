@@ -16,6 +16,7 @@ from app.decision.interfaces import (
     DecisionBuilder,
     DecisionPersistence,
     DecisionTraceabilityProvider,
+    DecisionDriftAnalyzer,
 )
 from app.decision.models import (
     ArchitectureDecision,
@@ -25,9 +26,12 @@ from app.decision.models import (
     DecisionResult,
     DecisionTraceLink,
     DecisionTraceGraph,
+    DecisionDrift,
+    DecisionDriftReport,
 )
 from app.decision.decision_builder import DecisionBuilderService
 from app.decision.decision_traceability import DecisionTraceabilityService
+from app.decision.decision_drift import DecisionDriftAnalyzerService
 
 __all__ = [
     "DecisionStatus",
@@ -41,6 +45,7 @@ __all__ = [
     "DecisionBuilder",
     "DecisionTraceabilityProvider",
     "DecisionPersistence",
+    "DecisionDriftAnalyzer",
     "ArchitectureDecision",
     "DecisionRelationship",
     "DecisionMetadata",
@@ -50,4 +55,7 @@ __all__ = [
     "DecisionTraceLink",
     "DecisionTraceGraph",
     "DecisionTraceabilityService",
+    "DecisionDrift",
+    "DecisionDriftReport",
+    "DecisionDriftAnalyzerService",
 ]

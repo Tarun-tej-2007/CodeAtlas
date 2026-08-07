@@ -186,3 +186,75 @@ class DecisionTraceGraph(BaseModel):
     def serialize_mappings(self, value: Any) -> dict:
         """Ensures serialization compatibility with mapping proxy classes."""
         return dict(value)
+
+
+class DecisionDrift(BaseModel):
+    """Immutable representation of architectural drift from a registered ArchitectureDecision decision."""
+
+    drift_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique drift finding tracking ID.")
+    decision_id: uuid.UUID = Field(..., description="Unique tracking identifier of associated decision.")
+    classification: str = Field(..., min_length=1, description="Classification category, e.g. orphaned_decision.")
+    severity: str = Field(..., min_length=1, description="Severity grade ranking, e.g. high, medium, low.")
+    message: str = Field(..., min_length=1, description="Descriptive diagnostic details message.")
+    details: Mapping[str, Any] = Field(
+        default_factory=dict, description="Metadata dictionary mapping details of drift."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("classification", "severity", "message", mode="after")
+    @classmethod
+    def validate_non_empty_strings(cls, v: str) -> str:
+        """Validates that string values are not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("Value must be a non-empty string.")
+        return v
+
+    @field_validator("details", mode="after")
+    @classmethod
+    def freeze_details(cls, v: Any) -> Any:
+        """Enforces runtime read-only dictionary views on details mapping."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("details")
+    def serialize_details(self, details: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(details)
+
+
+class DecisionDriftReport(BaseModel):
+    """Immutable collection containing all identified decision drift items."""
+
+    report_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique report tracking ID.")
+    project_id: uuid.UUID = Field(..., description="Associated project scope identifier.")
+    commit_id: str = Field(..., min_length=1, description="Associated Git commit hash.")
+    drifts: Tuple[DecisionDrift, ...] = Field(
+        default_factory=tuple, description="Set of identified decision drift findings."
+    )
+    drifts_by_classification: Mapping[str, Tuple[DecisionDrift, ...]] = Field(
+        default_factory=dict, description="Precalculated index grouping drift items by classification type."
+    )
+    extra_info: Mapping[str, Any] = Field(
+        default_factory=dict, description="Extensible metadata properties map."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("commit_id", mode="after")
+    @classmethod
+    def validate_commit_id_non_empty(cls, v: str) -> str:
+        """Validates that commit hash is not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("commit_id must be a non-empty string.")
+        return v
+
+    @field_validator("drifts_by_classification", "extra_info", mode="after")
+    @classmethod
+    def freeze_mappings(cls, v: Any) -> Any:
+        """Enforces runtime read-only dictionary views on mapping attributes."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("drifts_by_classification", "extra_info")
+    def serialize_mappings(self, value: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(value)
