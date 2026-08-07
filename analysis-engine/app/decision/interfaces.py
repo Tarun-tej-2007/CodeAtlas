@@ -12,6 +12,7 @@ from app.decision.models import (
     DecisionRequest,
     DecisionTraceGraph,
     DecisionDriftReport,
+    DecisionHealthReport,
 )
 
 
@@ -173,6 +174,41 @@ class DecisionDriftAnalyzer(ABC):
 
         Raises:
             DecisionValidationError: If inputs are invalid or contradictory.
+            DecisionError: For general subsystem failures.
+        """
+        pass
+
+
+class DecisionHealthAnalyzer(ABC):
+    """Abstract interface defining capabilities for evaluating decision health metrics."""
+
+    @abstractmethod
+    def analyze_health(
+        self,
+        project_id: uuid.UUID,
+        commit_id: str,
+        decisions: Tuple[ArchitectureDecision, ...],
+        drift_report: DecisionDriftReport,
+        trace_graph: DecisionTraceGraph,
+        evolution_result: Optional[Any] = None,
+        governance_result: Optional[Any] = None,
+    ) -> DecisionHealthReport:
+        """Evaluates health, compliance quality, and document completeness of decisions.
+
+        Args:
+            project_id: Associated project identifier.
+            commit_id: Associated Git commit hash.
+            decisions: Collection of decisions.
+            drift_report: Compiled drift analysis report.
+            trace_graph: Traceability graph.
+            evolution_result: Optional evolution trend result.
+            governance_result: Optional governance result.
+
+        Returns:
+            The compiled DecisionHealthReport DTO.
+
+        Raises:
+            DecisionValidationError: If parameters fail validation.
             DecisionError: For general subsystem failures.
         """
         pass
