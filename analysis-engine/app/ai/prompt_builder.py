@@ -72,6 +72,14 @@ class PromptBuilderService(PromptBuilder):
         if context is None:
             raise AIValidationError("context must not be None.")
 
+        from app.ai.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable(("build_prompt", request, context))
+            if cache_key in cache:
+                return cache[cache_key]
+
         analysis_type = request.analysis_type
         if analysis_type not in SYSTEM_INSTRUCTIONS:
             raise AIValidationError(f"Unsupported analysis type: {analysis_type}")
@@ -136,8 +144,13 @@ class PromptBuilderService(PromptBuilder):
             "analysis_type": request.analysis_type.value,
         }
 
-        return PromptContext(
+        res = PromptContext(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             variables=variables,
         )
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = res
+
+        return res

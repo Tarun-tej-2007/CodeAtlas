@@ -50,6 +50,17 @@ class AIContextAggregationService(AIContextBuilder):
         if not commit_id or not commit_id.strip():
             raise AIValidationError("commit_id must be a non-empty string.")
 
+        from app.ai.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable((
+                "build_context", project_id, commit_id, dependency_graph,
+                arch_result, governance_result, evolution_result, decisions, kwargs
+            ))
+            if cache_key in cache:
+                return cache[cache_key]
+
         commit_id_normalized = commit_id.strip()
 
         # 1. Process Dependency Graph
@@ -214,7 +225,7 @@ class AIContextAggregationService(AIContextBuilder):
         for k, v in kwargs.items():
             extra_context_dict[k] = v
 
-        return AIContext(
+        res = AIContext(
             project_id=project_id,
             commit_id=commit_id_normalized,
             dependency_graph_summary=dependency_graph_summary,
@@ -224,3 +235,8 @@ class AIContextAggregationService(AIContextBuilder):
             files_count=files_count,
             extra_context=extra_context_dict,
         )
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = res
+
+        return res

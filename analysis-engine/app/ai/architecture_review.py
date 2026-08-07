@@ -52,6 +52,14 @@ class ArchitectureReviewService(ArchitectureReviewer):
         if recommendations is None:
             raise AIValidationError("recommendations must not be None.")
 
+        from app.ai.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable(("generate_review", context, analysis, recommendations))
+            if cache_key in cache:
+                return cache[cache_key]
+
         # Match project and commit IDs
         if context.project_id != analysis.project_id:
             raise AIValidationError("context and analysis project_id mismatch.")
@@ -243,7 +251,7 @@ class ArchitectureReviewService(ArchitectureReviewer):
         immediate_actions = tuple(sorted(list(set(immediate_actions_list))))
         long_term_recommendations = tuple(sorted(list(set(long_term_list))))
 
-        return ArchitectureReview(
+        res = ArchitectureReview(
             project_id=context.project_id,
             commit_id=context.commit_id,
             executive_summary=executive_summary,
@@ -255,3 +263,8 @@ class ArchitectureReviewService(ArchitectureReviewer):
             immediate_actions=immediate_actions,
             long_term_recommendations=long_term_recommendations,
         )
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = res
+
+        return res
