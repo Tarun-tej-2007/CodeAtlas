@@ -65,11 +65,13 @@ from app.ai.interfaces import (
     PromptBuilder,
     RecommendationGenerator,
     ArchitectureReviewer,
+    AIOrchestrator,
 )
 from app.ai.context_aggregation import AIContextAggregationService
 from app.ai.prompt_builder import PromptBuilderService
 from app.ai.recommendation_engine import RecommendationGeneratorService
 from app.ai.architecture_review import ArchitectureReviewService
+from app.ai.ai_orchestrator import AIOrchestratorService
 
 __all__ = [
     # Enums
@@ -123,9 +125,11 @@ __all__ = [
     "RecommendationGenerator",
     "AIAnalysisPersistence",
     "ArchitectureReviewer",
+    "AIOrchestrator",
     # New services
     "AIContextAggregationService",
     "PromptBuilderService",
     "RecommendationGeneratorService",
     "ArchitectureReviewService",
+    "AIOrchestratorService",
 ]
