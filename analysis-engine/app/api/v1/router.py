@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, analyze, version, incremental, evolution, governance
+from app.api.v1.endpoints import health, analyze, version, incremental, evolution, governance, decision
 
 api_router = APIRouter()
 
@@ -36,4 +36,10 @@ api_router.include_router(
     governance.router,
     prefix="/api/v1",
     tags=["Architecture Governance"]
+)
+
+api_router.include_router(
+    decision.router,
+    prefix="/api/v1",
+    tags=["Architecture Decision Intelligence"]
 )
