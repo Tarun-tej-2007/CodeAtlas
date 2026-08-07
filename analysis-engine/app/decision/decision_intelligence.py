@@ -162,7 +162,14 @@ class DecisionIntelligenceService(DecisionIntelligenceOrchestrator):
                 extra_info={},
             )
 
-            return DecisionAnalysisResult(
+            try:
+                self.persistence.save_trace_graph(project_id, trace_graph)
+                self.persistence.save_drift_report(project_id, drift_report)
+                self.persistence.save_health_report(project_id, health_report)
+            except Exception as e:
+                raise DecisionPersistenceError(f"Infrastructure save failure during short-circuit: {str(e)}") from e
+
+            result = DecisionAnalysisResult(
                 project_id=project_id,
                 commit_id=commit_id.strip(),
                 decisions=(),
@@ -171,6 +178,12 @@ class DecisionIntelligenceService(DecisionIntelligenceOrchestrator):
                 health_report=health_report,
                 processed_at=datetime.now(timezone.utc),
             )
+            try:
+                self.persistence.save_analysis_result(project_id, result)
+            except Exception as e:
+                raise DecisionPersistenceError(f"Infrastructure save failure for analysis result during short-circuit: {str(e)}") from e
+
+            return result
 
         # 6. Traceability Graph Analysis
         try:
@@ -215,7 +228,14 @@ class DecisionIntelligenceService(DecisionIntelligenceOrchestrator):
                 raise e
             raise DecisionValidationError(f"Health analysis exception: {str(e)}") from e
 
-        return DecisionAnalysisResult(
+        try:
+            self.persistence.save_trace_graph(project_id, trace_graph)
+            self.persistence.save_drift_report(project_id, drift_report)
+            self.persistence.save_health_report(project_id, health_report)
+        except Exception as e:
+            raise DecisionPersistenceError(f"Infrastructure save failure for reports: {str(e)}") from e
+
+        result = DecisionAnalysisResult(
             project_id=project_id,
             commit_id=commit_id.strip(),
             decisions=sorted_decisions,
@@ -224,3 +244,9 @@ class DecisionIntelligenceService(DecisionIntelligenceOrchestrator):
             health_report=health_report,
             processed_at=datetime.now(timezone.utc),
         )
+        try:
+            self.persistence.save_analysis_result(project_id, result)
+        except Exception as e:
+            raise DecisionPersistenceError(f"Infrastructure save failure for analysis result: {str(e)}") from e
+
+        return result
