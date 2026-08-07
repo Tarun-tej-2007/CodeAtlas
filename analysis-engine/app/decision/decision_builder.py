@@ -2,7 +2,7 @@
 
 import re
 import uuid
-from typing import Set, Tuple
+from typing import Optional, Set, Tuple
 
 from app.decision.enums import DecisionCategory, DecisionPriority, DecisionRelationshipType, DecisionStatus
 from app.decision.exceptions import DecisionValidationError
