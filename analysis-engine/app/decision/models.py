@@ -258,3 +258,74 @@ class DecisionDriftReport(BaseModel):
     def serialize_mappings(self, value: Any) -> dict:
         """Ensures serialization compatibility with mapping proxy classes."""
         return dict(value)
+
+
+class DecisionHealth(BaseModel):
+    """Immutable model representing health scoring evaluation metrics for decisions."""
+
+    health_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique health metric tracking ID.")
+    overall_score: float = Field(..., ge=0.0, le=100.0, description="Overall compiled decision health score.")
+    category_scores: Mapping[str, float] = Field(
+        default_factory=dict, description="Precalculated health scores mapped by category."
+    )
+    classification: str = Field(..., min_length=1, description="Health class classification rating, e.g. Excellent.")
+    recommendations: Tuple[str, ...] = Field(
+        default_factory=tuple, description="Immutable tuple of recommended improvements."
+    )
+    metrics: Mapping[str, Any] = Field(
+        default_factory=dict, description="Metadata dictionary mapping health parameters metrics."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("classification", mode="after")
+    @classmethod
+    def validate_non_empty_strings(cls, v: str) -> str:
+        """Validates that rating classification name is not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("Value must be a non-empty string.")
+        return v
+
+    @field_validator("category_scores", "metrics", mode="after")
+    @classmethod
+    def freeze_details(cls, v: Any) -> Any:
+        """Enforces runtime read-only dictionary views on mappings."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("category_scores", "metrics")
+    def serialize_details(self, details: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(details)
+
+
+class DecisionHealthReport(BaseModel):
+    """Immutable report object summarizing complete decision health status."""
+
+    report_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique report tracking ID.")
+    project_id: uuid.UUID = Field(..., description="Associated project scope identifier.")
+    commit_id: str = Field(..., min_length=1, description="Associated Git commit hash.")
+    health: DecisionHealth = Field(..., description="Calculated decision health status details DTO.")
+    extra_info: Mapping[str, Any] = Field(
+        default_factory=dict, description="Extensible metadata properties map."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("commit_id", mode="after")
+    @classmethod
+    def validate_commit_id_non_empty(cls, v: str) -> str:
+        """Validates that commit hash is not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("commit_id must be a non-empty string.")
+        return v
+
+    @field_validator("extra_info", mode="after")
+    @classmethod
+    def freeze_extra_info(cls, v: Any) -> Any:
+        """Enforces runtime read-only dictionary views on extra_info mapping."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("extra_info")
+    def serialize_extra_info(self, extra_info: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(extra_info)
