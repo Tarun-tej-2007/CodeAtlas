@@ -118,6 +118,65 @@ class RecommendationGenerator(ABC):
         pass
 
 
+class AIRepository(ABC):
+    """Abstract interface defining data storage/retrieval operations for serialized AI subsystem artifacts."""
+
+    @abstractmethod
+    def save_data(self, key: str, data: dict) -> None:
+        """Saves a data dictionary under a given key.
+
+        Args:
+            key: Target unique storage key string.
+            data: Payload dictionary to save.
+
+        Raises:
+            Exception: If storage fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_data(self, key: str) -> Optional[dict]:
+        """Retrieves a data dictionary by key.
+
+        Args:
+            key: Target unique storage key string.
+
+        Returns:
+            The raw data dict if found, else None.
+
+        Raises:
+            Exception: If query fails.
+        """
+        pass
+
+    @abstractmethod
+    def delete_data(self, key: str) -> None:
+        """Deletes data stored under a given key.
+
+        Args:
+            key: Target unique storage key string.
+
+        Raises:
+            Exception: If deletion fails.
+        """
+        pass
+
+    @abstractmethod
+    def list_keys(self, prefix: str) -> Tuple[str, ...]:
+        """Lists all keys in storage matching a prefix.
+
+        Args:
+            prefix: Prefix to match keys.
+
+        Returns:
+            An immutable tuple of storage keys.
+
+        Raises:
+            Exception: If query fails.
+        """
+        pass
+
+
 class AIAnalysisPersistence(ABC):
     """Abstract interface defining storage and retrieval contracts for AI analysis runs."""
 
@@ -161,6 +220,63 @@ class AIAnalysisPersistence(ABC):
 
         Raises:
             AIPersistenceError: If query fails.
+        """
+        pass
+
+    @abstractmethod
+    def save_result(self, project_id: uuid.UUID, result: AIResult) -> None:
+        """Persists an AIResult execution record.
+
+        Args:
+            project_id: Scoping project UUID.
+            result: The AIResult run instance.
+
+        Raises:
+            AIPersistenceError: If save fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_result(self, project_id: uuid.UUID, commit_id: str) -> Optional[AIResult]:
+        """Retrieves a previously persisted AIResult execution record by project and commit.
+
+        Args:
+            project_id: Scoping project UUID.
+            commit_id: Associated commit hash.
+
+        Returns:
+            AIResult if found, else None.
+
+        Raises:
+            AIPersistenceError: If query fails.
+        """
+        pass
+
+    @abstractmethod
+    def list_results(self, project_id: uuid.UUID) -> Tuple[AIResult, ...]:
+        """Lists all AIResult execution records associated with a project.
+
+        Args:
+            project_id: Target project UUID.
+
+        Returns:
+            An immutable tuple of AIResult records.
+
+        Raises:
+            AIPersistenceError: If query fails.
+        """
+        pass
+
+    @abstractmethod
+    def delete_result(self, project_id: uuid.UUID, commit_id: str) -> None:
+        """Deletes an AIResult execution record.
+
+        Args:
+            project_id: Scoping project UUID.
+            commit_id: Associated commit hash.
+
+        Raises:
+            AIPersistenceError: If deletion fails.
         """
         pass
 
