@@ -5,7 +5,13 @@ from abc import ABC, abstractmethod
 from typing import Mapping, Optional, Tuple
 
 from app.decision.enums import DecisionCategory, DecisionPriority, DecisionStatus
-from app.decision.models import ArchitectureDecision, DecisionMetadata, DecisionRelationship, DecisionRequest
+from app.decision.models import (
+    ArchitectureDecision,
+    DecisionMetadata,
+    DecisionRelationship,
+    DecisionRequest,
+    DecisionTraceGraph,
+)
 
 
 class DecisionBuilder(ABC):
@@ -70,8 +76,8 @@ class DecisionTraceabilityProvider(ABC):
         project_id: uuid.UUID,
         commit_id: str,
         decisions: Tuple[ArchitectureDecision, ...],
-    ) -> Mapping[str, Tuple[uuid.UUID, ...]]:
-        """Maps codebase file paths/modules back to associated decision identifiers.
+    ) -> DecisionTraceGraph:
+        """Maps codebase file paths/modules back to associated decision identifiers and builds trace graph.
 
         Args:
             project_id: Unique project tracker.
@@ -79,7 +85,7 @@ class DecisionTraceabilityProvider(ABC):
             decisions: Collection of decisions.
 
         Returns:
-            A mapping from file paths/module identifiers to tuples of decision UUIDs.
+            The compiled immutable DecisionTraceGraph DTO.
 
         Raises:
             DecisionTraceabilityError: If traceability extraction fails.

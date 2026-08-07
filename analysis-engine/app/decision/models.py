@@ -130,3 +130,59 @@ class DecisionResult(BaseModel):
     def serialize_extra_info(self, extra_info: Any) -> dict:
         """Ensures serialization compatibility with mapping proxy classes."""
         return dict(extra_info)
+
+
+class DecisionTraceLink(BaseModel):
+    """Immutable model representing a single traceability link from a codebase target to a decision."""
+
+    target_id: str = Field(..., min_length=1, description="Normalized string identifier of codebase target artifact.")
+    target_type: str = Field(..., min_length=1, description="Type classification of codebase target, e.g. file, package, module, class, function, component, policy, evolution.")
+    decision_id: uuid.UUID = Field(..., description="Unique tracking identifier of associated ArchitectureDecision.")
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("target_id", "target_type", mode="after")
+    @classmethod
+    def validate_non_empty_strings(cls, v: str) -> str:
+        """Validates that string values are not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("Value must be a non-empty string.")
+        return v
+
+
+class DecisionTraceGraph(BaseModel):
+    """Immutable collection representing a complete graph mapping of decision links across codebase artifacts."""
+
+    graph_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique trace graph tracking ID.")
+    project_id: uuid.UUID = Field(..., description="Associated project scope identifier.")
+    commit_id: str = Field(..., min_length=1, description="Associated Git commit hash.")
+    links: Tuple[DecisionTraceLink, ...] = Field(
+        default_factory=tuple, description="Set of decision traceability links."
+    )
+    links_by_target: Mapping[str, Tuple[uuid.UUID, ...]] = Field(
+        default_factory=dict, description="Precalculated index mapping target identifier to associated decisions."
+    )
+    links_by_decision: Mapping[str, Tuple[str, ...]] = Field(
+        default_factory=dict, description="Precalculated index mapping decision identifier string to associated targets."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("commit_id", mode="after")
+    @classmethod
+    def validate_commit_id_non_empty(cls, v: str) -> str:
+        """Validates that commit hash is not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("commit_id must be a non-empty string.")
+        return v
+
+    @field_validator("links_by_target", "links_by_decision", mode="after")
+    @classmethod
+    def freeze_mappings(cls, v: Any) -> Any:
+        """Enforces runtime read-only dictionary views on mapping attributes."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("links_by_target", "links_by_decision")
+    def serialize_mappings(self, value: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(value)
