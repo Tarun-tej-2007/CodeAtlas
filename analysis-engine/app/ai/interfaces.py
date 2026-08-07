@@ -12,6 +12,7 @@ from app.ai.models import (
     AIUsageStatistics,
     PromptContext,
     ArchitectureReview,
+    AIResult,
 )
 
 
@@ -186,5 +187,41 @@ class ArchitectureReviewer(ABC):
 
         Raises:
             AIValidationError: If input validation fails.
+        """
+        pass
+
+
+class AIOrchestrator(ABC):
+    """Abstract interface defining the entry point for the AI Intelligence orchestration pipeline."""
+
+    @abstractmethod
+    def orchestrate_analysis(
+        self,
+        request: AIRequest,
+        dependency_graph: Optional[Any] = None,
+        arch_result: Optional[Any] = None,
+        governance_result: Optional[Any] = None,
+        evolution_result: Optional[Any] = None,
+        decisions: Optional[Tuple[Any, ...]] = None,
+        **kwargs: Any,
+    ) -> AIResult:
+        """Runs the end-to-end AI review pipeline, aggregating facts, calling LLM, and generating recommendations.
+
+        Args:
+            request: The AIRequest parameters.
+            dependency_graph: Optional dependency graph input.
+            arch_result: Optional architectural analysis results.
+            governance_result: Optional governance check results.
+            evolution_result: Optional evolution trend results.
+            decisions: Optional architecture decision records.
+            **kwargs: Extra extensible analysis subsystem parameters.
+
+        Returns:
+            The immutable result DTO enclosing the AIAnalysis and compiled review report.
+
+        Raises:
+            AIValidationError: For request parameter failures.
+            AIProviderError: For model execution provider failures.
+            AIPersistenceError: For storage persisting failures.
         """
         pass
