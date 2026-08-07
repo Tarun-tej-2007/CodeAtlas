@@ -53,6 +53,15 @@ class PolicyEvaluationService(PolicyRuleEvaluator):
         if not isinstance(rule, PolicyRule):
             raise GovernanceValidationError("rule must be a valid PolicyRule instance.")
 
+        # Check execution cache
+        from app.governance.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable(("eval_rule", commit_id, rule))
+            if cache_key in cache:
+                return cache[cache_key]
+
         violations: List[PolicyViolation] = []
         cfg = rule.configuration
 
@@ -279,7 +288,10 @@ class PolicyEvaluationService(PolicyRuleEvaluator):
 
         # Preserve deterministic ordering of violations sorted alphabetically by rule_name and message
         violations.sort(key=lambda v: (v.rule_name, v.message))
-        return tuple(violations)
+        res_tuple = tuple(violations)
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = res_tuple
+        return res_tuple
 
     def evaluate_request(self, request: GovernanceRequest) -> GovernanceResult:
         """Evaluates all policies defined in the GovernanceRequest and compiles the final GovernanceResult.
@@ -296,6 +308,15 @@ class PolicyEvaluationService(PolicyRuleEvaluator):
         """
         if request is None or not isinstance(request, GovernanceRequest):
             raise GovernanceValidationError("request must be a valid GovernanceRequest instance.")
+
+        # Check execution cache
+        from app.governance.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable(("eval_request", request))
+            if cache_key in cache:
+                return cache[cache_key]
 
         all_violations: List[PolicyViolation] = []
         total_rules = 0
@@ -344,7 +365,7 @@ class PolicyEvaluationService(PolicyRuleEvaluator):
         # Preserve deterministic ordering of violations sorted alphabetically by rule_name and message
         all_violations.sort(key=lambda v: (v.rule_name, v.message))
 
-        return GovernanceResult(
+        res_obj = GovernanceResult(
             result_id=uuid.uuid4(),
             project_id=request.project_id,
             commit_id=request.commit_id,
@@ -354,3 +375,8 @@ class PolicyEvaluationService(PolicyRuleEvaluator):
             created_at=datetime.now(timezone.utc),
             extra_info={"correlation_id": request.correlation_id} if request.correlation_id else {},
         )
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = res_obj
+
+        return res_obj

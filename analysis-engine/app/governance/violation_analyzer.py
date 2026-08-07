@@ -39,6 +39,14 @@ class GovernanceViolationAnalyzer(ViolationAnalyzer):
         if violations is None:
             raise GovernanceValidationError("violations collection must not be None.")
 
+        from app.governance.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable(("analyze_violations", project_id, commit_id.strip(), violations))
+            if cache_key in cache:
+                return cache[cache_key]
+
         enriched_list: List[EnrichedViolation] = []
         rule_groups: Dict[str, List[EnrichedViolation]] = {}
         severity_counts: Dict[str, int] = {
@@ -164,7 +172,7 @@ class GovernanceViolationAnalyzer(ViolationAnalyzer):
             grp.sort(key=lambda x: (x.rule_name.lower(), x.original_message.lower()))
             sorted_groups[r_name] = tuple(grp)
 
-        return GovernanceViolationReport(
+        report = GovernanceViolationReport(
             report_id=uuid.uuid4(),
             project_id=project_id,
             commit_id=commit_id.strip(),
@@ -174,3 +182,8 @@ class GovernanceViolationAnalyzer(ViolationAnalyzer):
             violations_by_severity=severity_counts,
             extra_info={},
         )
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = report
+
+        return report
