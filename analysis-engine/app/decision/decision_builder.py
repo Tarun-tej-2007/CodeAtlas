@@ -109,6 +109,17 @@ class DecisionBuilderService(DecisionBuilder):
         if relationships is None:
             raise DecisionValidationError("relationships must not be None.")
 
+        from app.decision.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable((
+                "build_decision", title, category, status, priority, context,
+                decision_text, consequences, metadata, relationships, decision_id
+            ))
+            if cache_key in cache:
+                return cache[cache_key]
+
         # Normalize string values
         norm_title = title.strip()
         norm_context = context.strip()
@@ -149,7 +160,7 @@ class DecisionBuilderService(DecisionBuilder):
         # Deterministic sorting of relationships: by target_decision_id, then by relationship_type
         normalized_rels.sort(key=lambda r: (str(r.target_decision_id), r.relationship_type.value))
 
-        return ArchitectureDecision(
+        res = ArchitectureDecision(
             decision_id=dec_id,
             title=norm_title,
             category=category,
@@ -161,6 +172,11 @@ class DecisionBuilderService(DecisionBuilder):
             metadata=metadata,
             relationships=tuple(normalized_rels),
         )
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = res
+
+        return res
 
     def validate_transition(self, current: DecisionStatus, proposed: DecisionStatus) -> None:
         """Validates if a transition from current status to proposed status is allowed.

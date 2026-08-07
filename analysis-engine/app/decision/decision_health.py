@@ -51,6 +51,17 @@ class DecisionHealthAnalyzerService(DecisionHealthAnalyzer):
         if trace_graph is None or not isinstance(trace_graph, DecisionTraceGraph):
             raise DecisionValidationError("trace_graph must be a valid DecisionTraceGraph instance.")
 
+        from app.decision.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable((
+                "analyze_health", project_id, commit_id.strip(), decisions, drift_report,
+                trace_graph, evolution_result, governance_result
+            ))
+            if cache_key in cache:
+                return cache[cache_key]
+
         # Baseline setup
         overall_score = 100.0
         traceability_score = 100.0
@@ -192,10 +203,15 @@ class DecisionHealthAnalyzerService(DecisionHealthAnalyzer):
             metrics=metrics,
         )
 
-        return DecisionHealthReport(
+        res = DecisionHealthReport(
             report_id=uuid.uuid4(),
             project_id=project_id,
             commit_id=commit_id.strip(),
             health=health,
             extra_info={},
         )
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = res
+
+        return res
