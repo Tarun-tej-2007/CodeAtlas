@@ -57,29 +57,57 @@ class AIOrchestratorService(AIOrchestrator):
         decisions: Optional[Tuple[Any, ...]] = None,
         **kwargs: Any,
     ) -> AIResult:
-        """Coordinates the end-to-end AI review pipeline.
-
-        Args:
-            request: The AIRequest session directives.
-            dependency_graph: Optional dependency graph facts.
-            arch_result: Optional structural issues metrics.
-            governance_result: Optional compliance violations.
-            evolution_result: Optional timeline history details.
-            decisions: Optional architecture decision DTOs.
-            **kwargs: Extra extensible analysis subsystem parameters.
-
-        Returns:
-            The compiled immutable AIResult enclosing the completed AIAnalysis.
-
-        Raises:
-            AIValidationError: For request validation failures.
-            AIProviderError: For model execution provider failures.
-            AIPersistenceError: For storage persisting failures.
-        """
+        """Coordinates the end-to-end AI review pipeline with execution-scoped cache lifecycle."""
         # Fail-fast request validation
         if request is None:
             raise AIValidationError("request must not be None.")
 
+        from app.ai.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+
+        is_outermost = False
+        token = None
+        if cache is None:
+            token = execution_cache.set({})
+            cache = execution_cache.get()
+            is_outermost = True
+
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable((
+                "orchestrate_analysis", request, dependency_graph, arch_result,
+                governance_result, evolution_result, decisions, kwargs
+            ))
+            if cache_key in cache:
+                return cache[cache_key]
+
+        try:
+            res = self._orchestrate_analysis_impl(
+                request=request,
+                dependency_graph=dependency_graph,
+                arch_result=arch_result,
+                governance_result=governance_result,
+                evolution_result=evolution_result,
+                decisions=decisions,
+                **kwargs,
+            )
+            if cache is not None and cache_key is not None:
+                cache[cache_key] = res
+            return res
+        finally:
+            if is_outermost and token is not None:
+                execution_cache.reset(token)
+
+    def _orchestrate_analysis_impl(
+        self,
+        request: AIRequest,
+        dependency_graph: Optional[Any] = None,
+        arch_result: Optional[Any] = None,
+        governance_result: Optional[Any] = None,
+        evolution_result: Optional[Any] = None,
+        decisions: Optional[Tuple[Any, ...]] = None,
+        **kwargs: Any,
+    ) -> AIResult:
         started_at = datetime.now(timezone.utc)
 
         # 1. Aggregate repository context facts

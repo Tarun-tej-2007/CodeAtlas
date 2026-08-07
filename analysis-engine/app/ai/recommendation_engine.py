@@ -55,6 +55,17 @@ class RecommendationGeneratorService(RecommendationGenerator):
         if raw_completion is None:
             raise AIValidationError("raw_completion must not be None.")
 
+        from app.ai.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable((
+                "generate_recommendations", request, raw_completion, analysis,
+                prompt_context, ai_context
+            ))
+            if cache_key in cache:
+                return cache[cache_key]
+
         # Pre-clean raw text
         cleaned_completion = raw_completion.strip()
         if not cleaned_completion:
@@ -97,7 +108,7 @@ class RecommendationGeneratorService(RecommendationGenerator):
         # 3. Fallback to Regex block parsing if JSON parsing could not be completed
         if not parsed_items:
             # Parse blocks by headers like "Title:", "Recommendation:"
-            blocks = re.split(r"(?:^|\n)\s*-*#*\s*(?:Recommendation|Item|Finding)\s*\d*\s*:?", cleaned_completion, re.IGNORECASE)
+            blocks = re.split(r"(?:^|\n)\s*-*#*\s*(?:Recommendation|Item|Finding)\s*\d*\s*:?", cleaned_completion, flags=re.IGNORECASE)
             for block in blocks:
                 if not block.strip():
                     continue
@@ -240,4 +251,9 @@ class RecommendationGeneratorService(RecommendationGenerator):
             )
         )
 
-        return tuple(recommendations)
+        res = tuple(recommendations)
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = res
+
+        return res
