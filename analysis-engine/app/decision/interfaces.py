@@ -344,6 +344,7 @@ class DecisionIntelligenceOrchestrator(ABC):
         arch_result: Optional[Any] = None,
         governance_result: Optional[Any] = None,
         evolution_result: Optional[Any] = None,
+        correlation_id: Optional[str] = None,
     ) -> DecisionAnalysisResult:
         """Runs decision compilation, traceability, drift, and health analysis orchestration.
 
