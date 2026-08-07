@@ -13,6 +13,7 @@ from app.decision.models import (
     DecisionTraceGraph,
     DecisionDriftReport,
     DecisionHealthReport,
+    DecisionAnalysisResult,
 )
 
 
@@ -209,6 +210,43 @@ class DecisionHealthAnalyzer(ABC):
 
         Raises:
             DecisionValidationError: If parameters fail validation.
+            DecisionError: For general subsystem failures.
+        """
+        pass
+
+
+class DecisionIntelligenceOrchestrator(ABC):
+    """Abstract interface for coordinating the complete Architecture Decision Intelligence pipeline."""
+
+    @abstractmethod
+    def analyze_project_decisions(
+        self,
+        project_id: uuid.UUID,
+        commit_id: str,
+        requests: Tuple[DecisionRequest, ...],
+        dependency_graph: Optional[Any] = None,
+        arch_result: Optional[Any] = None,
+        governance_result: Optional[Any] = None,
+        evolution_result: Optional[Any] = None,
+    ) -> DecisionAnalysisResult:
+        """Runs decision compilation, traceability, drift, and health analysis orchestration.
+
+        Args:
+            project_id: Unique project scoping ID.
+            commit_id: Target commit hash.
+            requests: Registered or new decision build requests.
+            dependency_graph: Codebase dependency graph.
+            arch_result: Quality analyzer outputs.
+            governance_result: Active compliance violations.
+            evolution_result: Codebase history metrics.
+
+        Returns:
+            The immutable compiled DecisionAnalysisResult aggregate payload.
+
+        Raises:
+            DecisionValidationError: For invalid workflow parameters.
+            DecisionPersistenceError: For database/infrastructure save/load exceptions.
+            DecisionTraceabilityError: For traceback resolution failures.
             DecisionError: For general subsystem failures.
         """
         pass
