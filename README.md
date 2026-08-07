@@ -1,257 +1,377 @@
-CodeAtlas 
+# CodeAtlas
 
-Principle Statement - 
+**Map Your Code. Understand Everything.**
 
-Map your Code, Understand Everythiing
+CodeAtlas is an AI-powered software architecture intelligence platform that enables developers and engineering teams to understand, analyze, visualize, govern, and improve complex software systems. It combines static code analysis, semantic analysis, dependency graph generation, architecture visualization, governance validation, architectural decision intelligence, and AI-assisted architecture reviews into a unified platform.
 
-Base statement - 
-
-CodeAtlas is an AI-powered codebase visualization platform that transforms complex repositories into interactive architectural maps. By analyzing source code, dependencies, and relationships, it helps developers understand, navigate, and reason about large software systems through intuitive visualizations and intelligent insights.
+Unlike traditional code analysis tools that focus on individual files or metrics, CodeAtlas provides a holistic view of an entire codebase, helping engineers understand architectural relationships, identify design issues, enforce governance policies, monitor architectural evolution, and receive intelligent recommendations for continuous improvement.
 
 ---
 
-## Docker Infrastructure Setup
+# Overview
 
-This project uses Docker and Docker Compose to containerize and orchestrate the local development environment. The services communicate with each other using Docker-defined service names within a shared custom bridge network.
+Modern software systems quickly become difficult to understand as they grow. Documentation becomes outdated, architectural decisions are forgotten, dependencies become increasingly complex, and technical debt accumulates over time.
 
-### Prerequisites
+CodeAtlas addresses these challenges by automatically analyzing source code and transforming it into structured architectural knowledge.
 
-Ensure you have the following installed on your machine:
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (which includes Docker Compose)
+The platform enables developers to:
 
-### Environment Configuration
+- Understand large codebases faster
+- Visualize software architecture
+- Detect architectural violations
+- Monitor architectural evolution
+- Track architecture decisions
+- Generate AI-powered architecture reviews
+- Improve long-term maintainability
 
-Before launching the environment, create a `.env` file in the root directory by copying the template file:
+CodeAtlas is designed as a modular platform following Domain-Driven Design (DDD), Clean Architecture, and SOLID principles, making it extensible and production-ready.
 
-```bash
-cp .env.example .env
+---
+
+# Motivation
+
+Understanding an unfamiliar codebase is one of the most time-consuming tasks in software engineering.
+
+Developers often spend days answering questions such as:
+
+- How is the project structured?
+- Which modules depend on each other?
+- What architectural patterns are being followed?
+- Which components violate architectural rules?
+- Where is technical debt accumulating?
+- How has the architecture changed over time?
+- Why was a particular architectural decision made?
+
+CodeAtlas was built to answer these questions automatically by converting source code into actionable architectural intelligence.
+
+---
+
+# Key Features
+
+## Static Code Analysis
+
+- Repository scanning
+- Multi-language parsing
+- Symbol extraction
+- AST generation
+- Semantic analysis
+- Dependency discovery
+
+---
+
+## Architecture Visualization
+
+- Dependency Graph Generation
+- Module Relationships
+- Package Hierarchies
+- Layer Visualization
+- Call Graph Construction
+- Interactive Graph Data
+
+---
+
+## Architecture Governance
+
+- Policy Definition Engine
+- Policy Evaluation Engine
+- Governance Violation Detection
+- Compliance Scoring
+- Governance Reporting
+- Rule Enforcement
+
+---
+
+## Architecture Evolution
+
+- Snapshot Comparison
+- Structural Change Detection
+- Trend Analysis
+- Architectural Regression Detection
+- Historical Evolution Tracking
+
+---
+
+## Architecture Decision Intelligence
+
+- Architecture Decision Records (ADR)
+- Decision Traceability
+- Drift Detection
+- Decision Health Analysis
+- Decision Intelligence Reports
+
+---
+
+## AI Architecture Intelligence
+
+- Context Aggregation
+- Prompt Construction
+- AI Recommendation Generation
+- Architecture Review Generation
+- Intelligent Refactoring Suggestions
+- AI-Powered Insights
+
+---
+
+## REST APIs
+
+Production-ready REST APIs are available for:
+
+- Analysis
+- Architecture Evolution
+- Governance
+- Decision Intelligence
+- AI Architecture Intelligence
+
+---
+
+# System Architecture
+
+CodeAtlas follows a modular service-oriented architecture.
+
+```
+                Client
+
+                  │
+
+          REST API Layer
+
+                  │
+
+      ┌───────────┴───────────┐
+
+      │                       │
+
+ Analysis Engine         Server
+
+      │
+
+ ├── Scanner
+ ├── Parser
+ ├── Semantic Analysis
+ ├── Graph Engine
+ ├── Visualization
+ ├── Evolution
+ ├── Governance
+ ├── Decision Intelligence
+ └── AI Intelligence
+
+      │
+
+ PostgreSQL + Redis
 ```
 
-Open `.env` and configure the environment variables as needed:
-- Add your `OPENAI_API_KEY` for AI features.
-- Update `JWT_SECRET` for securing JWT tokens.
-- Adjust PostgreSQL and Redis variables if necessary (defaults are preconfigured for instant start).
+Each subsystem is independently organized, making the platform easy to extend and maintain.
 
-### Quick Start
+---
 
-To build the images and launch the entire local environment, run:
+# Technology Stack
 
-```bash
-docker compose up --build
+## Backend
+
+- Python 3.12
+- FastAPI
+- SQLAlchemy
+- Pydantic v2
+- Alembic
+
+## Analysis
+
+- Tree-sitter
+- Static Analysis
+- Semantic Analysis
+- Graph Processing
+
+## Database
+
+- PostgreSQL
+- Redis
+
+## Infrastructure
+
+- Docker
+- Docker Compose
+- Render
+
+## Testing
+
+- unittest
+- Integration Testing
+- Production Hardening Tests
+
+---
+
+# Repository Structure
+
 ```
+CodeAtlas/
 
-This command will:
-1. Initialize the PostgreSQL database (`codeatlas-postgres`) and wait until it is healthy.
-2. Initialize the Redis cache (`codeatlas-redis`) and wait until it is healthy.
-3. Build and launch the FastAPI server (`codeatlas-server`) on port 8000.
-4. Build and launch the FastAPI analysis engine (`codeatlas-analysis-engine`) on port 8001.
-5. Build and launch the Next.js client (`codeatlas-client`) on port 3000.
+analysis-engine/
+    app/
+        scanner/
+        parser/
+        semantic/
+        graph/
+        visualization/
+        evolution/
+        governance/
+        decision/
+        ai/
 
-### Exposed Ports & Access
-
-| Service | Internal Port | Host Port | Endpoint / Access |
-|---|---|---|---|
-| **Next.js Client** | 3000 | `3000` | [http://localhost:3000](http://localhost:3000) |
-| **FastAPI Backend Server** | 8000 | `8000` | [http://localhost:8000](http://localhost:8000) |
-| **FastAPI Analysis Engine** | 8001 | `8001` | [http://localhost:8001](http://localhost:8001) |
-| **PostgreSQL Database** | 5432 | `5432` | `localhost:5432` (User/Password: `postgres`) |
-| **Redis Cache** | 6379 | `6379` | `localhost:6379` |
-
-### Key Docker Design Decisions
-
-1. **Multi-stage Next.js Build**: The client Dockerfile leverages multi-stage builds (`deps`, `builder`, `development`, `runner`) to keep the production image extremely lightweight, while supporting a hot-reloading `development` target.
-2. **Anonymous Volume Mounts**: To prevent conflicts between host machine dependencies and the Linux Alpine client container, anonymous volume mounts are used for `/app/node_modules` and `/app/.next`.
-3. **Layer Caching**: Both Python backend services copy only `requirements.txt` initially to build and cache dependencies. Re-building code changes occurs instantly since pip install is skipped unless dependencies change.
-4. **Non-Root System Users**: For improved runtime security, all application services execute under non-root system users (`nextjs` for Next.js, `appuser` for FastAPI).
-5. **Bridge Networking**: The containers are assigned to `codeatlas-network`. Services refer to each other by name (e.g. `http://codeatlas-server:8000`) instead of `localhost`.
-6. **Health Checks & Start Ordering**: App services depend on Postgres and Redis being fully initialized and reporting "healthy" via Docker healthchecks before they spin up, preventing startup crashes.
-7. **Built-in Python Health Check**: FastAPI services execute simple, native Python HTTP calls (`urllib.request`) to run healthchecks, avoiding image bloat from `curl`/`wget`.
-
-
-
-# Getting Started
-
-Follow the steps below to set up the CodeAtlas development environment on your local machine.
-
-## Prerequisites
-
-Make sure the following software is installed:
-
-* Git
-* Docker Desktop (Docker Engine + Docker Compose)
-* Python 3.12+ (optional for local development)
-* Node.js 20+ (optional for frontend development)
-
-Verify the installations:
-
-```bash
-git --version
-docker --version
-docker compose version
-python --version
-node --version
+server/
+client/
+docker/
+docs/
 ```
 
 ---
 
-## 1. Clone the Repository
+# Core Modules
+
+| Module | Description |
+|---------|-------------|
+| Scanner | Repository discovery and file scanning |
+| Parser | Tree-sitter parsing |
+| Semantic Analysis | Symbol resolution and semantic model |
+| Graph Engine | Dependency and relationship graphs |
+| Visualization | Architecture visualization |
+| Evolution | Architecture evolution tracking |
+| Governance | Policy enforcement and compliance |
+| Decision Intelligence | ADR management and drift analysis |
+| AI Intelligence | AI-powered architecture reviews |
+
+---
+
+# Installation
+
+Clone the repository.
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Tarun-tej-2007/CodeAtlas.git
+```
+
+Navigate into the project.
+
+```bash
 cd CodeAtlas
 ```
 
----
-
-## 2. Create the Environment File
-
-Inside the `server` directory, create a `.env` file.
-
-Example:
-
-```env
-DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/codeatlas
-REDIS_URL=redis://redis:6379/0
-
-SECRET_KEY=your-super-secret-key
-JWT_ISSUER=codeatlas
-JWT_AUDIENCE=codeatlas-users
-
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
-```
-
-> **Note:** Never commit your `.env` file to the repository.
-
----
-
-## 3. Start the Development Environment
-
-From the project root:
+Install dependencies.
 
 ```bash
-docker compose up --build -d
+pip install -r requirements.txt
 ```
 
-This command will start:
-
-* PostgreSQL
-* Redis
-* FastAPI Backend
-* Analysis Engine
-* Frontend
-
----
-
-## 4. Verify the Containers
+Start the services.
 
 ```bash
-docker compose ps
-```
-
-All containers should show a **Running** or **Healthy** status.
-
-To inspect logs:
-
-```bash
-docker compose logs -f
+docker compose up
 ```
 
 ---
 
-## 5. Apply Database Migrations
+# Running the Project
 
-Run Alembic migrations:
+Run the analysis server.
 
 ```bash
-docker compose exec server alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+The API will be available at:
+
+```
+http://localhost:8000
 ```
 
 ---
 
-## 6. Access the Application
+# API Modules
 
-Once everything is running:
+The platform exposes REST endpoints for:
 
-| Service           | URL                         |
-| ----------------- | --------------------------- |
-| Frontend          | http://localhost:3000       |
-| Backend API       | http://localhost:8000       |
-| API Documentation | http://localhost:8000/docs  |
-| ReDoc             | http://localhost:8000/redoc |
+- Repository Analysis
+- Incremental Analysis
+- Architecture Evolution
+- Governance
+- Decision Intelligence
+- AI Intelligence
 
----
-
-## 7. Stopping the Environment
-
-Stop all running containers:
-
-```bash
-docker compose down
-```
-
-To remove associated volumes as well:
-
-```bash
-docker compose down -v
-```
+Interactive documentation is available through FastAPI Swagger UI.
 
 ---
 
-## Development Workflow
+# Design Principles
 
-Create a new feature branch before making changes:
+CodeAtlas is built around the following engineering principles:
 
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/<feature-name>
-```
-
-Commit your work with clear, descriptive commit messages:
-
-```bash
-git add .
-git commit -m "feat: describe your changes"
-git push -u origin feature/<feature-name>
-```
-
-Open a Pull Request to `develop` when your work is complete.
+- Domain-Driven Design (DDD)
+- Clean Architecture
+- SOLID Principles
+- Immutable Domain Models
+- Dependency Injection
+- Provider-Agnostic Design
+- Storage-Agnostic Persistence
+- Deterministic Processing
+- Thread Safety
+- Production-Ready Error Handling
 
 ---
 
-## Troubleshooting
+# Testing
 
-### Rebuild the containers
+The project includes extensive automated testing covering:
 
-```bash
-docker compose down
-docker compose up --build -d
-```
+- Unit Tests
+- Integration Tests
+- API Tests
+- Performance Tests
+- Production Hardening Tests
 
-### View backend logs
-
-```bash
-docker compose logs -f server
-```
-
-### Restart a service
-
-```bash
-docker compose restart server
-```
+The analysis engine currently contains over **1,200 automated tests**, ensuring correctness, reliability, and long-term maintainability.
 
 ---
 
-## Project Structure
+# Roadmap
 
-```text
-CodeAtlas/
-├── analysis-engine/
-├── client/
-├── server/
-├── docker-compose.yml
-└── README.md
-```
+### Completed
 
-Happy coding! 🚀
+- Static Analysis Engine
+- Semantic Analysis Engine
+- Dependency Graph Engine
+- Visualization Engine
+- Architecture Evolution
+- Governance Engine
+- Decision Intelligence
+- AI Architecture Intelligence
+
+### Planned
+
+- Frontend Dashboard
+- Interactive Graph Visualizations
+- Real LLM Provider Integration
+- Multi-language Support Expansion
+- Enterprise Authentication
+- Team Collaboration
+- Cloud Deployment Templates
+
+---
+
+# Contributing
+
+Contributions are welcome.
+
+If you would like to improve CodeAtlas, please fork the repository, create a feature branch, implement your changes, add appropriate tests, and submit a pull request.
+
+---
+
+# License
+
+This project is licensed under the MIT License.
+
+---
+
+# Author
+
+**Tarun Tej**
+
+GitHub: https://github.com/Tarun-tej-2007
