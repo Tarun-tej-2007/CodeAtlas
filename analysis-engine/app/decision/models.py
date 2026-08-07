@@ -329,3 +329,42 @@ class DecisionHealthReport(BaseModel):
     def serialize_extra_info(self, extra_info: Any) -> dict:
         """Ensures serialization compatibility with mapping proxy classes."""
         return dict(extra_info)
+
+
+class DecisionAnalysisResult(BaseModel):
+    """Immutable aggregate model containing all outputs from the decision intelligence pipeline."""
+
+    result_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="Unique result run tracking ID.")
+    project_id: uuid.UUID = Field(..., description="Associated project scope identifier.")
+    commit_id: str = Field(..., min_length=1, description="Associated Git commit hash.")
+    decisions: Tuple[ArchitectureDecision, ...] = Field(
+        default_factory=tuple, description="Set of analyzed architecture decisions."
+    )
+    trace_graph: DecisionTraceGraph = Field(..., description="Traceability graph DTO.")
+    drift_report: DecisionDriftReport = Field(..., description="Drift analysis report DTO.")
+    health_report: DecisionHealthReport = Field(..., description="Health evaluation report DTO.")
+    processed_at: datetime = Field(..., description="UTC timezone-aware timestamp when processing occurred.")
+    extra_info: Mapping[str, Any] = Field(
+        default_factory=dict, description="Extensible metadata properties map."
+    )
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator("processed_at", mode="after")
+    @classmethod
+    def validate_utc_timezone(cls, v: datetime) -> datetime:
+        """Ensures processing timestamp is timezone-aware UTC."""
+        if v.tzinfo is None or v.tzinfo != timezone.utc:
+            raise ValueError("processed_at must be a timezone-aware UTC datetime.")
+        return v
+
+    @field_validator("extra_info", mode="after")
+    @classmethod
+    def freeze_extra_info(cls, v: Any) -> Any:
+        """Enforces runtime read-only dictionary views on extra_info mapping."""
+        return MappingProxyType(dict(v))
+
+    @field_serializer("extra_info")
+    def serialize_extra_info(self, extra_info: Any) -> dict:
+        """Ensures serialization compatibility with mapping proxy classes."""
+        return dict(extra_info)
