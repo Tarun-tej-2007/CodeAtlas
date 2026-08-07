@@ -23,8 +23,11 @@ from app.decision.models import (
     DecisionRelationship,
     DecisionRequest,
     DecisionResult,
+    DecisionTraceLink,
+    DecisionTraceGraph,
 )
 from app.decision.decision_builder import DecisionBuilderService
+from app.decision.decision_traceability import DecisionTraceabilityService
 
 __all__ = [
     "DecisionStatus",
@@ -44,4 +47,7 @@ __all__ = [
     "DecisionRequest",
     "DecisionResult",
     "DecisionBuilderService",
+    "DecisionTraceLink",
+    "DecisionTraceGraph",
+    "DecisionTraceabilityService",
 ]
