@@ -11,6 +11,7 @@ from app.decision.models import (
     DecisionRelationship,
     DecisionRequest,
     DecisionTraceGraph,
+    DecisionDriftReport,
 )
 
 
@@ -136,5 +137,42 @@ class DecisionPersistence(ABC):
 
         Raises:
             DecisionPersistenceError: If query fails.
+        """
+        pass
+
+
+class DecisionDriftAnalyzer(ABC):
+    """Abstract interface defining capabilities for detecting decision divergence drift."""
+
+    @abstractmethod
+    def analyze_drift(
+        self,
+        project_id: uuid.UUID,
+        commit_id: str,
+        decisions: Tuple[ArchitectureDecision, ...],
+        trace_graph: DecisionTraceGraph,
+        dependency_graph: Optional[Any] = None,
+        arch_result: Optional[Any] = None,
+        governance_result: Optional[Any] = None,
+        evolution_result: Optional[Any] = None,
+    ) -> DecisionDriftReport:
+        """Analyzes divergence between architectural intent and implementation state.
+
+        Args:
+            project_id: Associated project identifier.
+            commit_id: Associated Git commit hash.
+            decisions: Registered decisions to evaluate.
+            trace_graph: Traceability graph mapping decisions to code targets.
+            dependency_graph: Optional dependency graph output.
+            arch_result: Optional architecture analysis result.
+            governance_result: Optional governance check result.
+            evolution_result: Optional evolution trend result.
+
+        Returns:
+            The compiled DecisionDriftReport DTO.
+
+        Raises:
+            DecisionValidationError: If inputs are invalid or contradictory.
+            DecisionError: For general subsystem failures.
         """
         pass
