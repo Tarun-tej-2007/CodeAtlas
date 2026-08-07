@@ -11,6 +11,7 @@ from app.ai.models import (
     AIRequest,
     AIUsageStatistics,
     PromptContext,
+    ArchitectureReview,
 )
 
 
@@ -159,5 +160,31 @@ class AIAnalysisPersistence(ABC):
 
         Raises:
             AIPersistenceError: If query fails.
+        """
+        pass
+
+
+class ArchitectureReviewer(ABC):
+    """Abstract interface defining the component that synthesizes AI analysis results into reports."""
+
+    @abstractmethod
+    def generate_review(
+        self,
+        context: AIContext,
+        analysis: AIAnalysis,
+        recommendations: Tuple[AIRecommendation, ...],
+    ) -> ArchitectureReview:
+        """Synthesizes context, run history, and recommendations into an ArchitectureReview.
+
+        Args:
+            context: Collected codebase facts context.
+            analysis: Associated AIAnalysis run details.
+            recommendations: Set of resolved recommendations.
+
+        Returns:
+            The compiled immutable ArchitectureReview report.
+
+        Raises:
+            AIValidationError: If input validation fails.
         """
         pass
