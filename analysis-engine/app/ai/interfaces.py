@@ -93,7 +93,14 @@ class RecommendationGenerator(ABC):
     """Abstract interface for parsing and translating raw text responses into structured recommendation DTOs."""
 
     @abstractmethod
-    def generate_recommendations(self, request: AIRequest, raw_completion: str) -> Tuple[AIRecommendation, ...]:
+    def generate_recommendations(
+        self,
+        request: AIRequest,
+        raw_completion: str,
+        analysis: Optional[AIAnalysis] = None,
+        prompt_context: Optional[PromptContext] = None,
+        ai_context: Optional[AIContext] = None,
+    ) -> Tuple[AIRecommendation, ...]:
         """Translates raw LLM response text into structured AIRecommendation tuples.
 
         Args:

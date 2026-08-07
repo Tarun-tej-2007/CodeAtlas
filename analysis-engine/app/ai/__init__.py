@@ -62,6 +62,7 @@ from app.ai.interfaces import (
 )
 from app.ai.context_aggregation import AIContextAggregationService
 from app.ai.prompt_builder import PromptBuilderService
+from app.ai.recommendation_engine import RecommendationGeneratorService
 
 __all__ = [
     # Enums
@@ -112,4 +113,5 @@ __all__ = [
     # New services
     "AIContextAggregationService",
     "PromptBuilderService",
+    "RecommendationGeneratorService",
 ]
