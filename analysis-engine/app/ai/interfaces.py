@@ -27,6 +27,7 @@ class AIContextBuilder(ABC):
         governance_result: Optional[Any] = None,
         evolution_result: Optional[Any] = None,
         decisions: Optional[Tuple[Any, ...]] = None,
+        **kwargs: Any,
     ) -> AIContext:
         """Assembles dependency summaries, quality issues, compliance violations, and ADRs into AIContext.
 
