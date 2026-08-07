@@ -79,100 +79,170 @@ class DecisionIntelligenceService(DecisionIntelligenceOrchestrator):
         if requests is None:
             raise DecisionValidationError("requests collection must not be None.")
 
-        # 1. Load existing decisions from persistence
+        from app.decision.cache import execution_cache
+        token = execution_cache.set({})
+
         try:
-            existing_decisions = self.persistence.list_decisions(project_id)
-        except Exception as e:
-            raise DecisionPersistenceError(f"Infrastructure exception during list_decisions: {str(e)}") from e
-
-        # Ensure we got a tuple
-        if existing_decisions is None:
-            existing_decisions = ()
-
-        # 2. Build new decisions from request collection
-        new_decisions = []
-        for req in requests:
-            if not isinstance(req, DecisionRequest):
-                raise DecisionValidationError("All items in requests must be valid DecisionRequest instances.")
+            # 1. Load existing decisions from persistence
             try:
-                dec = self.builder.build_from_request(req)
-                new_decisions.append(dec)
+                existing_decisions = self.persistence.list_decisions(project_id)
             except Exception as e:
-                # Pass validation errors directly
+                raise DecisionPersistenceError(f"Infrastructure exception during list_decisions: {str(e)}") from e
+
+            # Ensure we got a tuple
+            if existing_decisions is None:
+                existing_decisions = ()
+
+            # 2. Build new decisions from request collection
+            new_decisions = []
+            for req in requests:
+                if not isinstance(req, DecisionRequest):
+                    raise DecisionValidationError("All items in requests must be valid DecisionRequest instances.")
+                try:
+                    dec = self.builder.build_from_request(req)
+                    new_decisions.append(dec)
+                except Exception as e:
+                    # Pass validation errors directly
+                    if isinstance(e, DecisionValidationError):
+                        raise e
+                    raise DecisionValidationError(f"Failed to build decision from request: {str(e)}") from e
+
+            # 3. Save newly created decisions to persistence
+            for dec in new_decisions:
+                try:
+                    self.persistence.save_decision(project_id, dec)
+                except Exception as e:
+                    raise DecisionPersistenceError(f"Infrastructure exception during save_decision: {str(e)}") from e
+
+            # 4. Merge existing and new decisions, ensuring uniqueness and sorting deterministically
+            dec_map = {d.decision_id: d for d in existing_decisions}
+            for dec in new_decisions:
+                dec_map[dec.decision_id] = dec
+
+            sorted_decisions = tuple(
+                sorted(dec_map.values(), key=lambda d: str(d.decision_id))
+            )
+
+            # 5. Short-circuit if no decisions exist in repository
+            if not sorted_decisions:
+                trace_graph = DecisionTraceGraph(
+                    project_id=project_id,
+                    commit_id=commit_id.strip(),
+                    links=(),
+                    links_by_target={},
+                    links_by_decision={},
+                )
+                drift_report = DecisionDriftReport(
+                    project_id=project_id,
+                    commit_id=commit_id.strip(),
+                    drifts=(),
+                    drifts_by_classification={},
+                    extra_info={},
+                )
+                health = DecisionHealth(
+                    overall_score=100.0,
+                    category_scores={
+                        "alignment": 100.0,
+                        "completeness": 100.0,
+                        "freshness": 100.0,
+                        "traceability": 100.0,
+                    },
+                    classification="Excellent",
+                    recommendations=(),
+                    metrics={
+                        "total_decisions": 0,
+                        "stale_decisions": 0,
+                        "orphaned_decisions": 0,
+                        "drifted_decisions": 0,
+                        "governance_conflicts": 0,
+                        "inconsistent_lifecycle": 0,
+                        "undocumented_fields": 0,
+                    },
+                )
+                health_report = DecisionHealthReport(
+                    project_id=project_id,
+                    commit_id=commit_id.strip(),
+                    health=health,
+                    extra_info={},
+                )
+
+                try:
+                    self.persistence.save_trace_graph(project_id, trace_graph)
+                    self.persistence.save_drift_report(project_id, drift_report)
+                    self.persistence.save_health_report(project_id, health_report)
+                except Exception as e:
+                    raise DecisionPersistenceError(f"Infrastructure save failure during short-circuit: {str(e)}") from e
+
+                result = DecisionAnalysisResult(
+                    project_id=project_id,
+                    commit_id=commit_id.strip(),
+                    decisions=(),
+                    trace_graph=trace_graph,
+                    drift_report=drift_report,
+                    health_report=health_report,
+                    processed_at=datetime.now(timezone.utc),
+                )
+                try:
+                    self.persistence.save_analysis_result(project_id, result)
+                except Exception as e:
+                    raise DecisionPersistenceError(f"Infrastructure save failure for analysis result during short-circuit: {str(e)}") from e
+
+                return result
+
+            # 6. Traceability Graph Analysis
+            try:
+                trace_graph = self.traceability_provider.trace_decisions(
+                    project_id, commit_id, sorted_decisions
+                )
+            except Exception as e:
+                if isinstance(e, DecisionTraceabilityError):
+                    raise e
+                raise DecisionTraceabilityError(f"Traceability extraction exception: {str(e)}") from e
+
+            # 7. Drift Mismatch Checks
+            try:
+                drift_report = self.drift_analyzer.analyze_drift(
+                    project_id,
+                    commit_id,
+                    sorted_decisions,
+                    trace_graph,
+                    dependency_graph,
+                    arch_result,
+                    governance_result,
+                    evolution_result,
+                )
+            except Exception as e:
                 if isinstance(e, DecisionValidationError):
                     raise e
-                raise DecisionValidationError(f"Failed to build decision from request: {str(e)}") from e
+                raise DecisionValidationError(f"Drift analysis exception: {str(e)}") from e
 
-        # 3. Save newly created decisions to persistence
-        for dec in new_decisions:
+            # 8. Health and Quality Checks
             try:
-                self.persistence.save_decision(project_id, dec)
+                health_report = self.health_analyzer.analyze_health(
+                    project_id,
+                    commit_id,
+                    sorted_decisions,
+                    drift_report,
+                    trace_graph,
+                    evolution_result,
+                    governance_result,
+                )
             except Exception as e:
-                raise DecisionPersistenceError(f"Infrastructure exception during save_decision: {str(e)}") from e
-
-        # 4. Merge existing and new decisions, ensuring uniqueness and sorting deterministically
-        dec_map = {d.decision_id: d for d in existing_decisions}
-        for dec in new_decisions:
-            dec_map[dec.decision_id] = dec
-
-        sorted_decisions = tuple(
-            sorted(dec_map.values(), key=lambda d: str(d.decision_id))
-        )
-
-        # 5. Short-circuit if no decisions exist in repository
-        if not sorted_decisions:
-            trace_graph = DecisionTraceGraph(
-                project_id=project_id,
-                commit_id=commit_id.strip(),
-                links=(),
-                links_by_target={},
-                links_by_decision={},
-            )
-            drift_report = DecisionDriftReport(
-                project_id=project_id,
-                commit_id=commit_id.strip(),
-                drifts=(),
-                drifts_by_classification={},
-                extra_info={},
-            )
-            health = DecisionHealth(
-                overall_score=100.0,
-                category_scores={
-                    "alignment": 100.0,
-                    "completeness": 100.0,
-                    "freshness": 100.0,
-                    "traceability": 100.0,
-                },
-                classification="Excellent",
-                recommendations=(),
-                metrics={
-                    "total_decisions": 0,
-                    "stale_decisions": 0,
-                    "orphaned_decisions": 0,
-                    "drifted_decisions": 0,
-                    "governance_conflicts": 0,
-                    "inconsistent_lifecycle": 0,
-                    "undocumented_fields": 0,
-                },
-            )
-            health_report = DecisionHealthReport(
-                project_id=project_id,
-                commit_id=commit_id.strip(),
-                health=health,
-                extra_info={},
-            )
+                if isinstance(e, DecisionValidationError):
+                    raise e
+                raise DecisionValidationError(f"Health analysis exception: {str(e)}") from e
 
             try:
                 self.persistence.save_trace_graph(project_id, trace_graph)
                 self.persistence.save_drift_report(project_id, drift_report)
                 self.persistence.save_health_report(project_id, health_report)
             except Exception as e:
-                raise DecisionPersistenceError(f"Infrastructure save failure during short-circuit: {str(e)}") from e
+                raise DecisionPersistenceError(f"Infrastructure save failure for reports: {str(e)}") from e
 
             result = DecisionAnalysisResult(
                 project_id=project_id,
                 commit_id=commit_id.strip(),
-                decisions=(),
+                decisions=sorted_decisions,
                 trace_graph=trace_graph,
                 drift_report=drift_report,
                 health_report=health_report,
@@ -181,72 +251,8 @@ class DecisionIntelligenceService(DecisionIntelligenceOrchestrator):
             try:
                 self.persistence.save_analysis_result(project_id, result)
             except Exception as e:
-                raise DecisionPersistenceError(f"Infrastructure save failure for analysis result during short-circuit: {str(e)}") from e
+                raise DecisionPersistenceError(f"Infrastructure save failure for analysis result: {str(e)}") from e
 
             return result
-
-        # 6. Traceability Graph Analysis
-        try:
-            trace_graph = self.traceability_provider.trace_decisions(
-                project_id, commit_id, sorted_decisions
-            )
-        except Exception as e:
-            if isinstance(e, DecisionTraceabilityError):
-                raise e
-            raise DecisionTraceabilityError(f"Traceability extraction exception: {str(e)}") from e
-
-        # 7. Drift Mismatch Checks
-        try:
-            drift_report = self.drift_analyzer.analyze_drift(
-                project_id,
-                commit_id,
-                sorted_decisions,
-                trace_graph,
-                dependency_graph,
-                arch_result,
-                governance_result,
-                evolution_result,
-            )
-        except Exception as e:
-            if isinstance(e, DecisionValidationError):
-                raise e
-            raise DecisionValidationError(f"Drift analysis exception: {str(e)}") from e
-
-        # 8. Health and Quality Checks
-        try:
-            health_report = self.health_analyzer.analyze_health(
-                project_id,
-                commit_id,
-                sorted_decisions,
-                drift_report,
-                trace_graph,
-                evolution_result,
-                governance_result,
-            )
-        except Exception as e:
-            if isinstance(e, DecisionValidationError):
-                raise e
-            raise DecisionValidationError(f"Health analysis exception: {str(e)}") from e
-
-        try:
-            self.persistence.save_trace_graph(project_id, trace_graph)
-            self.persistence.save_drift_report(project_id, drift_report)
-            self.persistence.save_health_report(project_id, health_report)
-        except Exception as e:
-            raise DecisionPersistenceError(f"Infrastructure save failure for reports: {str(e)}") from e
-
-        result = DecisionAnalysisResult(
-            project_id=project_id,
-            commit_id=commit_id.strip(),
-            decisions=sorted_decisions,
-            trace_graph=trace_graph,
-            drift_report=drift_report,
-            health_report=health_report,
-            processed_at=datetime.now(timezone.utc),
-        )
-        try:
-            self.persistence.save_analysis_result(project_id, result)
-        except Exception as e:
-            raise DecisionPersistenceError(f"Infrastructure save failure for analysis result: {str(e)}") from e
-
-        return result
+        finally:
+            execution_cache.reset(token)

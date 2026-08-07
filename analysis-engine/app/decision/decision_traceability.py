@@ -37,6 +37,14 @@ class DecisionTraceabilityService(DecisionTraceabilityProvider):
         if decisions is None:
             raise DecisionTraceabilityError("decisions collection must not be None.")
 
+        from app.decision.cache import execution_cache, make_hashable
+        cache = execution_cache.get()
+        cache_key = None
+        if cache is not None:
+            cache_key = make_hashable(("trace_decisions", project_id, commit_id.strip(), decisions))
+            if cache_key in cache:
+                return cache[cache_key]
+
         links_list: List[DecisionTraceLink] = []
 
         # Parse target links from each decision's extra_info / metadata
@@ -116,7 +124,7 @@ class DecisionTraceabilityService(DecisionTraceabilityProvider):
         for d_key in sorted(links_by_decision.keys()):
             sorted_by_decision[d_key] = tuple(sorted(links_by_decision[d_key]))
 
-        return DecisionTraceGraph(
+        res = DecisionTraceGraph(
             graph_id=uuid.uuid4(),
             project_id=project_id,
             commit_id=commit_id.strip(),
@@ -124,3 +132,8 @@ class DecisionTraceabilityService(DecisionTraceabilityProvider):
             links_by_target=sorted_by_target,
             links_by_decision=sorted_by_decision,
         )
+
+        if cache is not None and cache_key is not None:
+            cache[cache_key] = res
+
+        return res
