@@ -6,12 +6,12 @@ RUN apk add --no-cache libc6-compat
 # Stage 2: Install dependencies (both prod and dev dependencies)
 FROM base AS deps
 COPY client/package.json client/package-lock.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Stage 3: Development environment
 FROM base AS development
 COPY client/package.json client/package-lock.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 COPY client/ .
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
