@@ -5,10 +5,12 @@ import {
   listProjects,
   getProject,
   createProject,
+  updateProject,
+  deleteProject,
   triggerProjectAnalysis,
   ListProjectsParams,
 } from "@/lib/api/projects";
-import { ProjectCreate } from "@/types/project";
+import { ProjectCreate, ProjectUpdate } from "@/types/project";
 
 export function useProjects(params?: ListProjectsParams) {
   return useQuery({
@@ -29,6 +31,29 @@ export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: ProjectCreate) => createProject(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ projectId, data }: { projectId: string; data: ProjectUpdate }) =>
+      updateProject(projectId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (projectId: string) => deleteProject(projectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });

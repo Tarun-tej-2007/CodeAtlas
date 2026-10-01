@@ -9,10 +9,20 @@ from app.core.exceptions import (
     AnalysisEngineRequestError,
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(
     title="CodeAtlas API",
     description="Backend API for CodeAtlas",
     version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3001"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
