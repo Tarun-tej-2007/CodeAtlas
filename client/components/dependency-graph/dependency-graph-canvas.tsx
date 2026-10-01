@@ -217,12 +217,17 @@ function GraphInner({ data, layout, selectedNodeId, onNodeSelect, searchQuery }:
       <Background color="#1E293B" gap={20} size={1} />
       <MiniMap 
         nodeColor={(n) => {
-          if (n.data?.layer === "external") return "#64748B";
-          if (n.data?.layer === "application") return "#8B5CF6";
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const comp = n.data as any;
+          if (comp?.layer === "presentation") return "#3B82F6";
+          if (comp?.layer === "application") return "#8B5CF6";
+          if (comp?.layer === "domain") return "#10B981";
+          if (comp?.layer === "infrastructure") return "#F59E0B";
+          if (comp?.layer === "external") return "#64748B";
           return "#3B82F6";
         }}
         maskColor="rgba(8, 13, 24, 0.7)"
-        className="bg-[#0F1726] border border-[#1E293B] !rounded-md overflow-hidden hidden sm:block" 
+        className="bg-[#0B1220] border border-[#1E293B] rounded-lg shadow-sm hidden sm:block" 
       />
       {/* We hide default controls because we build custom toolbar ones */}
       <Controls showInteractive={false} className="hidden" />

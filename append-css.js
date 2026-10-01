@@ -1,70 +1,6 @@
-@import "tailwindcss";
+const fs = require('fs');
 
-@theme {
-  --color-brand-bg: #080D18;
-  --color-brand-bg-secondary: #0B1220;
-  --color-brand-surface: #0F1726;
-  --color-brand-surface-elevated: #141E2E;
-  --color-brand-surface-hover: #182337;
-  
-  --color-brand-border: #1E293B;
-  --color-brand-border-subtle: #172235;
-  --color-brand-border-strong: #334155;
-  
-  --color-brand-text-primary: #F8FAFC;
-  --color-brand-text-secondary: #CBD5E1;
-  --color-brand-text-muted: #94A3B8;
-  --color-brand-text-disabled: #64748B;
-  
-  --color-brand-blue: #3B82F6;
-  --color-brand-blue-hover: #2563EB;
-  --color-brand-cyan: #22D3EE;
-  --color-brand-success: #22C55E;
-  --color-brand-warning: #F59E0B;
-  --color-brand-critical: #EF4444;
-  --color-brand-info: #3B82F6;
-
-  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-}
-
-:root {
-  --background: #080D18;
-  --foreground: #F8FAFC;
-}
-
-html,
-body {
-  height: 100%;
-  overflow: hidden;
-}
-
-body {
-  background-color: #080D18;
-  color: #F8FAFC;
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Custom scrollbar for dark technical aesthetic */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #080D18;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #1E293B;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
-}
+const css = \`
 
 /* --- React Flow CodeAtlas Dark Theme Overrides --- */
 
@@ -157,3 +93,7 @@ html body .react-flow__attribution a {
 html body .react-flow__attribution a:hover {
   color: #94A3B8;
 }
+\`;
+
+fs.appendFileSync('client/app/globals.css', css);
+console.log("Appended styles successfully.");
