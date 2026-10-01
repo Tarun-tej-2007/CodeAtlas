@@ -5,8 +5,8 @@ import { MOCK_EVOLUTION_DATA } from "@/lib/mock-data/architecture-evolution";
 
 // Mock Recharts
 vi.mock("recharts", () => ({
-  ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
-  LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  LineChart: ({ children }: { children: React.ReactNode }) => <div data-testid="line-chart">{children}</div>,
   Line: () => <div data-testid="line" />,
   XAxis: () => <div />,
   YAxis: () => <div />,
