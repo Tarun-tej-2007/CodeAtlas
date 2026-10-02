@@ -19,7 +19,11 @@ export class ApiClientError extends Error {
 
 function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("codeatlas_access_token");
+  const token = localStorage.getItem("codeatlas_access_token");
+  if (!token && process.env.NODE_ENV === "development") {
+    return process.env.NEXT_PUBLIC_DEV_TOKEN || null;
+  }
+  return token;
 }
 
 export async function apiClient<T>(
