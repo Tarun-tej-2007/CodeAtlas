@@ -35,7 +35,7 @@ describe("Activity & Audit Log Page", () => {
   it("handles filtering by search", () => {
     render(<ActivityPage />);
     
-    const searchInput = screen.getByPlaceholderText("Search events, components, projects...");
+    const searchInput = screen.getByPlaceholderText("Search activity...");
     fireEvent.change(searchInput, { target: { value: "left-pad" } });
     
     expect(screen.queryByText("Comprehensive Architecture Review completed")).not.toBeInTheDocument();
@@ -45,7 +45,7 @@ describe("Activity & Audit Log Page", () => {
   it("handles empty state when no results", () => {
     render(<ActivityPage />);
     
-    const searchInput = screen.getByPlaceholderText("Search events, components, projects...");
+    const searchInput = screen.getByPlaceholderText("Search activity...");
     fireEvent.change(searchInput, { target: { value: "NO_MATCHING_TEXT_HERE" } });
     
     expect(screen.getByText("No activity matches the current filters.")).toBeInTheDocument();
@@ -94,4 +94,5 @@ describe("Activity & Audit Log Page", () => {
     expect(screen.getByText("AI Summary")).toBeInTheDocument();
   });
 });
+
 
