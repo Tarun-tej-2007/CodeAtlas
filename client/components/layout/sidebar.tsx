@@ -16,6 +16,7 @@ import {
   Settings,
   X,
   Hexagon,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -68,7 +69,10 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: "SYSTEM",
-    items: [{ name: "Settings", href: "/settings", icon: Settings }],
+    items: [
+      { name: "Activity", href: "/activity", icon: Activity },
+      { name: "Settings", href: "/settings", icon: Settings }
+    ],
   },
 ];
 
