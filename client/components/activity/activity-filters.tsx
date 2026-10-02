@@ -19,16 +19,16 @@ export function ActivityFilters({ filters, onChange, onClear, resultCount }: Pro
 
   return (
     <div className="bg-[#0F1726] border border-[#1E293B] rounded-lg p-4 mb-6">
-      <div className="flex flex-col xl:flex-row gap-4">
+      <div className="flex flex-wrap items-center gap-3">
         {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#64748B]" />
+        <div className="relative w-full xl:w-[260px] shrink-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#64748B] pointer-events-none" />
           <input
             type="text"
-            placeholder="Search events, components, projects..."
+            placeholder="Search activity..."
             value={filters.search}
             onChange={(e) => onChange({ search: e.target.value })}
-            className="w-full pl-9 pr-10 py-2 bg-[#080D18] border border-[#1E293B] rounded-md text-sm text-[#F8FAFC] placeholder:text-[#64748B] focus:outline-none focus:border-[#3B82F6]"
+            className="w-full pl-9 pr-9 py-2 bg-[#080D18] border border-[#1E293B] rounded-md text-sm text-[#F8FAFC] placeholder:text-[#64748B] focus:outline-none focus:border-[#3B82F6]"
           />
           {filters.search && (
             <button 
@@ -41,9 +41,8 @@ export function ActivityFilters({ filters, onChange, onClear, resultCount }: Pro
         </div>
         
         {/* Dropdown Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          <select 
-            value={filters.type}
+        <select 
+          value={filters.type}
             onChange={(e) => onChange({ type: e.target.value as ActivityType | "ALL" })}
             className="bg-[#080D18] border border-[#1E293B] rounded-md px-3 py-2 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#3B82F6] min-w-[130px]"
           >
@@ -119,7 +118,6 @@ export function ActivityFilters({ filters, onChange, onClear, resultCount }: Pro
             </button>
           )}
         </div>
-      </div>
       
       <div className="mt-4 pt-4 border-t border-[#1E293B] flex items-center justify-between text-xs text-[#64748B]">
         <span>Showing {resultCount} matching events</span>
