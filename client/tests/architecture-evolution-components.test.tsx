@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import EvolutionPage from "@/app/evolution/page";
-import { MOCK_EVOLUTION_DATA } from "@/lib/mock-data/architecture-evolution";
 
 // Mock Recharts
 vi.mock("recharts", () => ({
@@ -47,7 +46,7 @@ describe("Architecture Evolution Page", () => {
   it("filters update appropriately", () => {
     render(<EvolutionPage />);
     // There are 6 events in mock data
-    const timelineEventsBeforeFilter = screen.getAllByRole("button", { name: /ProjectService refactored|New ArchitectureService introduced|Circular dependency detected|Boundary violation resolved|RepositoryScanner added/i });
+    expect(screen.getAllByRole("button", { name: /ProjectService refactored|New ArchitectureService introduced|Circular dependency detected|Boundary violation resolved|RepositoryScanner added/i }).length).toBeGreaterThan(0);
     
     const categorySelect = screen.getAllByRole("combobox")[2]; // Assuming first two are snapshot selectors
     fireEvent.change(categorySelect, { target: { value: "Structure" } });

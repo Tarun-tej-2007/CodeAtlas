@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { MOCK_GOVERNANCE_DATA } from "@/lib/mock-data/governance";
-import { GovernancePolicy, GovernanceViolation, PolicyCategory, PolicyStatus, Severity, ViolationStatus } from "@/types/governance-ui";
+import { PolicyCategory } from "@/types/governance-ui";
 
 import { GovernanceHeader } from "@/components/governance/governance-header";
 import { GovernanceHealthOverview } from "@/components/governance/governance-health-overview";

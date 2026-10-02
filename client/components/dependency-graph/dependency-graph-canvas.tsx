@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -85,7 +85,7 @@ function GraphInner({ data, layout, selectedNodeId, onNodeSelect, searchQuery }:
         },
       } as Node;
     });
-  }, [data.nodes, layout, data]);
+  }, [data, layout]);
 
   const initialEdges = useMemo(() => {
     return data.edges.map(edge => ({
@@ -217,8 +217,7 @@ function GraphInner({ data, layout, selectedNodeId, onNodeSelect, searchQuery }:
       <Background color="#1E293B" gap={20} size={1} />
       <MiniMap 
         nodeColor={(n) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const comp = n.data as any;
+          const comp = n.data as unknown as DependencyNode | undefined;
           if (comp?.layer === "presentation") return "#3B82F6";
           if (comp?.layer === "application") return "#8B5CF6";
           if (comp?.layer === "domain") return "#10B981";

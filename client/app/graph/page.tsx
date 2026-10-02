@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { DependencyGraphHeader } from "@/components/dependency-graph/dependency-graph-header";
 import { DependencyGraphToolbar } from "@/components/dependency-graph/dependency-graph-toolbar";

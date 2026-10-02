@@ -14,9 +14,12 @@ export function EvolutionTrend({ snapshots }: EvolutionTrendProps) {
   const [timeRange, setTimeRange] = useState<"7D" | "30D" | "90D" | "1Y">("30D");
 
   const data = useMemo(() => {
-    // In a real app, we'd filter by timeRange. Here we just show available mock snapshots
-    // Since mock data only has 9 points, we show all of them.
-    return snapshots.map(s => ({
+    let sliced = snapshots;
+    if (timeRange === "7D") sliced = snapshots.slice(-4);
+    else if (timeRange === "30D") sliced = snapshots.slice(-6);
+    else if (timeRange === "90D") sliced = snapshots.slice(-8);
+
+    return sliced.map(s => ({
       timestamp: s.timestamp,
       health: s.healthScore,
       drift: s.driftScore,

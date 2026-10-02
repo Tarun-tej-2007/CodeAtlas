@@ -35,7 +35,7 @@ export default function SettingsPage() {
     return JSON.stringify(savedSettings) !== JSON.stringify(settings);
   }, [savedSettings, settings]);
 
-  const handleUpdate = useCallback((section: keyof SettingsState, updates: any) => {
+  const handleUpdate = useCallback(<K extends keyof SettingsState>(section: K, updates: Partial<SettingsState[K]>) => {
     setSettings(prev => ({
       ...prev,
       [section]: { ...prev[section], ...updates }
@@ -110,7 +110,7 @@ export default function SettingsPage() {
             {!hasSearchMatch && searchQuery ? (
               <div className="bg-[#0F1726]/50 border border-[#1E293B] border-dashed rounded-lg p-12 text-center">
                 <p className="text-[#F8FAFC] font-medium mb-1">No settings found</p>
-                <p className="text-sm text-[#64748B]">No matching settings in the "{activeSection}" section.</p>
+                <p className="text-sm text-[#64748B]">No matching settings in the &quot;{activeSection}&quot; section.</p>
               </div>
             ) : (
               <>

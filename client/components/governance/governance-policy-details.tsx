@@ -1,5 +1,5 @@
 import { GovernancePolicy } from "@/types/governance-ui";
-import { X, ShieldCheck, Tag, User, Layers, Info } from "lucide-react";
+import { X, Tag, User, Layers, Info } from "lucide-react";
 import Link from "next/link";
 
 interface GovernancePolicyDetailsProps {

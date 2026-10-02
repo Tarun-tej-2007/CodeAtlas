@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { MOCK_EVOLUTION_DATA } from "@/lib/mock-data/architecture-evolution";
-import { EvolutionEvent } from "@/types/architecture-evolution-ui";
 
 import { ArchitectureEvolutionHeader } from "@/components/architecture-evolution/architecture-evolution-header";
 import { EvolutionOverview } from "@/components/architecture-evolution/evolution-overview";

@@ -14,7 +14,7 @@ import { TechnicalDebtAnalysis } from "@/components/decision-intelligence/techni
 import { DecisionHistory } from "@/components/decision-intelligence/decision-history";
 import { DecisionSummary } from "@/components/decision-intelligence/decision-summary";
 import { DecisionAnalysisRunner } from "@/components/decision-intelligence/decision-analysis-runner";
-import { DecisionCategory, DecisionRecommendation, EffortLevel, ImpactLevel, RecommendationPriority, RecommendationStatus, DecisionAnalysisState } from "@/types/decision-intelligence-ui";
+import { DecisionCategory, EffortLevel, ImpactLevel, RecommendationPriority, RecommendationStatus, DecisionAnalysisState } from "@/types/decision-intelligence-ui";
 
 export default function DecisionIntelligencePage() {
   const [data, setData] = useState(MOCK_DECISION_DATA);

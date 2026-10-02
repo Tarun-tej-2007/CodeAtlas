@@ -1,5 +1,5 @@
 import { ArchitectureReviewFinding, FindingStatus } from "@/types/ai-architecture-review-ui";
-import { X, AlertTriangle, ShieldCheck, FileText, Code2, Check, ShieldOff } from "lucide-react";
+import { X, AlertTriangle, FileText, Code2, Check, ShieldOff } from "lucide-react";
 import { useEffect } from "react";
 
 interface FindingDetailsProps {
