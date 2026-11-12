@@ -62,6 +62,26 @@ class ProjectService:
             description=data.description,
             visibility=data.visibility,
         )
+
+        if getattr(data, "repository_url", None):
+            from app.models.repository import Repository
+            from app.models.enums import RepositoryProvider, RepositoryStatus
+
+            repo_provider = RepositoryProvider.GITHUB
+            url_lower = data.repository_url.lower()
+            if "gitlab" in url_lower:
+                repo_provider = RepositoryProvider.GITLAB
+            elif "bitbucket" in url_lower:
+                repo_provider = RepositoryProvider.BITBUCKET
+
+            repo = Repository(
+                project_id=project.id,
+                name=data.name,
+                provider=repo_provider,
+                clone_url=data.repository_url,
+                status=RepositoryStatus.READY,
+            )
+            project.repositories.append(repo)
         
         self.project_repo.create(project)
         self.db.commit()

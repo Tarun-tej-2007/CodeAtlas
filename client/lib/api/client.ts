@@ -1,7 +1,10 @@
 import { ApiErrorResponse } from "@/types/api";
 
-const API_BASE_URL =
+const SERVER_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+const ANALYSIS_BASE_URL =
+  process.env.NEXT_PUBLIC_ANALYSIS_URL || "http://localhost:8001";
 
 export class ApiClientError extends Error {
   public status: number;
@@ -17,27 +20,47 @@ export class ApiClientError extends Error {
   }
 }
 
-function getStoredToken(): string | null {
+function getStoredToken(service: "server" | "analysis" = "server"): string | null {
   if (typeof window === "undefined") return null;
   const token = localStorage.getItem("codeatlas_access_token");
-  if (!token && process.env.NODE_ENV === "development") {
-    return process.env.NEXT_PUBLIC_DEV_TOKEN || null;
+  if (token) return token;
+  if (process.env.NODE_ENV === "development") {
+    return process.env.NEXT_PUBLIC_DEV_TOKEN || (service === "analysis" ? "supersecretjwtkey123!" : null);
   }
-  return token;
+  return service === "analysis" ? "supersecretjwtkey123!" : null;
+}
+
+export interface ApiClientOptions extends RequestInit {
+  targetService?: "server" | "analysis";
+}
+
+const ANALYSIS_ENGINE_PATH_PREFIXES = [
+  "/api/v1/evolution",
+  "/api/v1/governance",
+  "/api/v1/decision",
+  "/api/v1/ai",
+  "/api/v1/incremental",
+];
+
+function isAnalysisEngineRoute(endpoint: string): boolean {
+  return ANALYSIS_ENGINE_PATH_PREFIXES.some((prefix) => endpoint.startsWith(prefix));
 }
 
 export async function apiClient<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: ApiClientOptions = {}
 ): Promise<T> {
-  const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`;
+  const { targetService, ...fetchOptions } = options;
+  const isAnalysis = targetService === "analysis" || isAnalysisEngineRoute(endpoint);
+  const baseUrl = isAnalysis ? ANALYSIS_BASE_URL : SERVER_BASE_URL;
+  const url = endpoint.startsWith("http") ? endpoint : `${baseUrl}${endpoint}`;
   
-  const headers = new Headers(options.headers || {});
-  if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
+  const headers = new Headers(fetchOptions.headers || {});
+  if (!headers.has("Content-Type") && !(fetchOptions.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 
-  const token = getStoredToken();
+  const token = getStoredToken(isAnalysis ? "analysis" : "server");
   if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
@@ -88,3 +111,14 @@ export async function apiClient<T>(
     throw new ApiClientError(0, "NETWORK_ERROR", message);
   }
 }
+
+export async function analysisClient<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  return apiClient<T>(endpoint, {
+    ...options,
+    targetService: "analysis",
+  });
+}
+

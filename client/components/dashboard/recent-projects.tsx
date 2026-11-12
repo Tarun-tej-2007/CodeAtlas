@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FolderGit2, ArrowUpRight, ExternalLink } from "lucide-react";
 import { ProjectResponse } from "@/types/project";
-import { getHealthStatus } from "@/lib/utils";
+import { getHealthStatus, formatRelativeTime } from "@/lib/utils";
 
 interface RecentProjectsProps {
   projects: ProjectResponse[];
@@ -56,7 +56,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
       ? projects.map((p, idx) => ({
           ...p,
           mockScore: idx === 0 ? 92 : idx === 1 ? 86 : 78,
-          displayTime: "Recently",
+          displayTime: formatRelativeTime(p.updated_at),
         }))
       : BASELINE_FALLBACK_PROJECTS;
 

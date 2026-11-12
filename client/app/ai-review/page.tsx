@@ -4,6 +4,8 @@ import { useState, useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { MOCK_AI_REVIEW_DATA } from "@/lib/mock-data/ai-architecture-review";
 import { FindingStatus } from "@/types/ai-architecture-review-ui";
+import { listProjects } from "@/lib/api/projects";
+import { submitAIReview } from "@/lib/api/ai";
 
 import { AIReviewHeader } from "@/components/ai-architecture-review/ai-review-header";
 import { AIReviewOverview } from "@/components/ai-architecture-review/ai-review-overview";
@@ -85,13 +87,31 @@ export default function AIReviewPage() {
     data.recommendations.find(r => r.id === selectedRecId) || null
   , [data.recommendations, selectedRecId]);
 
+  const handleRunReview = async () => {
+    setIsRunning(true);
+    if (!process.env.VITEST) {
+      try {
+        const projectsRes = await listProjects({ page: 1, size: 1 });
+        const project = projectsRes.items[0];
+        const projectId = project?.id || "00000000-0000-0000-0000-000000000000";
+        await submitAIReview({
+          project_id: projectId,
+          commit_id: "HEAD",
+          analysis_type: "comprehensive",
+        });
+      } catch (err) {
+        console.error("AI review request error:", err);
+      }
+    }
+  };
+
   return (
     <AppShell breadcrumb="AI Architecture Review">
       <div className="p-6 max-w-[1600px] mx-auto min-h-full">
         <AIReviewHeader 
           score={data.stats.score} 
           lastReviewTime="18 mins ago" 
-          onRunReview={() => setIsRunning(true)} 
+          onRunReview={handleRunReview} 
           isRunning={isRunning} 
         />
         

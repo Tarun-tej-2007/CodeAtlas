@@ -43,3 +43,20 @@ export function getHealthStatus(score: number): {
     borderClass: "border-[#EF4444]/20",
   };
 }
+
+export function formatRelativeTime(dateString: string | null | undefined): string {
+  if (!dateString) return "Never";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (diffSeconds < 60) return "Just now";
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+    if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
+    return `${Math.floor(diffSeconds / 86400)}d ago`;
+  } catch {
+    return dateString;
+  }
+}
+

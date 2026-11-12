@@ -26,6 +26,7 @@ export interface ProjectCreate {
   name: string;
   description?: string | null;
   visibility?: ProjectVisibility;
+  repository_url?: string | null;
 }
 
 export interface ProjectUpdate {

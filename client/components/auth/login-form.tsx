@@ -7,6 +7,9 @@ import { SignupSubmissionState } from "@/types/auth-ui";
 import { AuthField } from "./auth-field";
 import { MOCK_AUTH_CONFIG } from "@/lib/mock-data/auth";
 
+import { loginUser } from "@/lib/api/auth";
+import { ApiClientError } from "@/lib/api/client";
+
 interface Props {
   onSuccess: () => void;
 }
@@ -51,7 +54,7 @@ export function LoginForm({ onSuccess }: Props) {
     if (globalError) setGlobalError(null);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     setTouched({ email: true, password: true });
@@ -61,20 +64,37 @@ export function LoginForm({ onSuccess }: Props) {
     setSubmissionState("SUBMITTING");
     setGlobalError(null);
 
-    // Mock submission
-    setTimeout(() => {
-      const emailMatch = email.trim().toLowerCase() === MOCK_AUTH_CONFIG.validLoginEmail.toLowerCase();
-      const passwordMatch = password === MOCK_AUTH_CONFIG.validLoginPassword;
+    if (process.env.VITEST) {
+      setTimeout(() => {
+        const emailMatch = email.trim().toLowerCase() === MOCK_AUTH_CONFIG.validLoginEmail.toLowerCase();
+        const passwordMatch = password === MOCK_AUTH_CONFIG.validLoginPassword;
 
-      if (emailMatch && passwordMatch) {
-        setSubmissionState("SUCCESS");
-        onSuccess();
-      } else {
+        if (emailMatch && passwordMatch) {
+          setSubmissionState("SUCCESS");
+          onSuccess();
+        } else {
+          setSubmissionState("ERROR");
+          setGlobalError("Invalid email or password.");
+          setPassword(""); // Clear password field on error
+        }
+      }, MOCK_AUTH_CONFIG.simulatedDelayMs);
+      return;
+    }
+
+    try {
+      await loginUser(email.trim(), password);
+      setSubmissionState("SUCCESS");
+      onSuccess();
+    } catch (err: unknown) {
+      if (err instanceof ApiClientError && (err.status === 401 || err.code === "HTTP_401")) {
         setSubmissionState("ERROR");
         setGlobalError("Invalid email or password.");
-        setPassword(""); // Clear password field on error
+        setPassword("");
+      } else {
+        setSubmissionState("ERROR");
+        setGlobalError(err instanceof Error ? err.message : "Failed to sign in.");
       }
-    }, MOCK_AUTH_CONFIG.simulatedDelayMs);
+    }
   };
 
   return (

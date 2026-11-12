@@ -29,6 +29,7 @@
 
 import { DashboardData } from "@/types/dashboard";
 import { ProjectResponse } from "@/types/project";
+import { formatRelativeTime } from "@/lib/utils";
 
 export const BASELINE_DASHBOARD_METRICS: Omit<DashboardData, "recentProjects"> = {
   lastAnalysisTimestamp: "12m ago",
@@ -151,8 +152,18 @@ export const BASELINE_DASHBOARD_METRICS: Omit<DashboardData, "recentProjects"> =
 };
 
 export function adaptDashboardData(projects: ProjectResponse[]): DashboardData {
+  const hasProjects = projects && projects.length > 0;
+  const lastTimestamp = hasProjects
+    ? formatRelativeTime(projects[0].updated_at)
+    : "No analyses yet";
+
   return {
     ...BASELINE_DASHBOARD_METRICS,
+    lastAnalysisTimestamp: lastTimestamp,
+    statusCounts: {
+      ...BASELINE_DASHBOARD_METRICS.statusCounts,
+      services: hasProjects ? projects.length : BASELINE_DASHBOARD_METRICS.statusCounts.services,
+    },
     recentProjects: projects,
   };
 }
