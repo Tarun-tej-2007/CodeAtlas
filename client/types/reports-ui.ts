@@ -64,6 +64,15 @@ export interface ReportSummary {
   keyObservations: string[];
 }
 
+export interface ReportGenerationOptions {
+  scope: string;
+  includeFindings: boolean;
+  includeRecommendations: boolean;
+  includeArchitectureDiagram: boolean;
+  includeGovernanceSummary: boolean;
+  includeTechnicalDebt: boolean;
+}
+
 export interface ReportGenerationState {
   status: ReportStatus;
   step: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArchitectureComponent, ArchitectureData } from "@/types/architecture-ui";
+import { ArchitectureData } from "@/types/architecture-ui";
 import { X, ExternalLink, Activity, Target, Network } from "lucide-react";
 import Link from "next/link";
 

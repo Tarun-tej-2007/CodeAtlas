@@ -12,6 +12,7 @@ export function ProjectCreateDialog({ onClose }: ProjectCreateDialogProps) {
   
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [repositoryUrl, setRepositoryUrl] = useState("");
   const [visibility, setVisibility] = useState<ProjectVisibility>("private");
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +35,7 @@ export function ProjectCreateDialog({ onClose }: ProjectCreateDialogProps) {
         name: name.trim(),
         description: description.trim() || undefined,
         visibility,
+        repository_url: repositoryUrl.trim() || undefined,
       });
       onClose();
     } catch (err: unknown) {
@@ -93,6 +95,20 @@ export function ProjectCreateDialog({ onClose }: ProjectCreateDialogProps) {
               rows={3}
               className="block w-full rounded-md border border-[#1E293B] bg-[#141E2E] py-2 px-3 text-sm text-[#F8FAFC] placeholder-[#64748B] focus:border-[#3B82F6] focus:outline-hidden focus:ring-1 focus:ring-[#3B82F6] resize-none"
               placeholder="Briefly describe this project..."
+            />
+          </div>
+
+          <div>
+            <label htmlFor="repositoryUrl" className="block text-xs font-medium text-[#CBD5E1] mb-1.5">
+              Repository URL <span className="text-[#64748B]">(Optional)</span>
+            </label>
+            <input
+              id="repositoryUrl"
+              type="url"
+              value={repositoryUrl}
+              onChange={(e) => setRepositoryUrl(e.target.value)}
+              className="block w-full rounded-md border border-[#1E293B] bg-[#141E2E] py-2 px-3 text-sm text-[#F8FAFC] placeholder-[#64748B] focus:border-[#3B82F6] focus:outline-hidden focus:ring-1 focus:ring-[#3B82F6]"
+              placeholder="e.g. https://github.com/org/repo"
             />
           </div>
           

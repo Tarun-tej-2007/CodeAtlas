@@ -1,5 +1,5 @@
 import { GovernanceException } from "@/types/governance-ui";
-import { ShieldAlert, Clock, User } from "lucide-react";
+import { Clock, User } from "lucide-react";
 
 interface GovernanceExceptionsProps {
   exceptions: GovernanceException[];

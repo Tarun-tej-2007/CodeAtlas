@@ -10,6 +10,7 @@ class ProjectCreate(BaseModel):
     name: str = Field(..., max_length=150, description="The name of the project.")
     description: str | None = Field(default=None, max_length=500, description="Optional project description.")
     visibility: ProjectVisibility = Field(default=ProjectVisibility.PRIVATE, description="Project visibility.")
+    repository_url: str | None = Field(default=None, max_length=255, description="Optional Git repository clone URL.")
 
     @field_validator("name")
     @classmethod

@@ -1,5 +1,5 @@
-import { GovernancePolicy, PolicyCategory, PolicyStatus } from "@/types/governance-ui";
-import { Search, Filter, X } from "lucide-react";
+import { GovernancePolicy, PolicyStatus } from "@/types/governance-ui";
+import { Search, X } from "lucide-react";
 
 interface GovernancePolicyListProps {
   policies: GovernancePolicy[];

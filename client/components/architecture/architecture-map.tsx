@@ -153,7 +153,7 @@ function ArchitectureMapInner({
   }, [data, selectedLayerId, selectedComponentId]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   // Update selection and search state
   useEffect(() => {

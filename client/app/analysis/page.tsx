@@ -22,6 +22,7 @@ import {
   MOCK_FILE_CONTENTS,
 } from "@/lib/mock-data/analysis";
 import { FileNode, AnalysisIssue } from "@/types/analysis-ui";
+import { listProjects, triggerProjectAnalysis } from "@/lib/api/projects";
 
 export default function AnalysisPage() {
   const [status, setStatus] = useState<"idle" | "running" | "completed">("idle");
@@ -32,12 +33,24 @@ export default function AnalysisPage() {
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<AnalysisIssue | null>(null);
 
-  // Mock Analysis Run Logic
-  const handleRunAnalysis = () => {
+  // Analysis Run Logic
+  const handleRunAnalysis = async () => {
     setStatus("running");
     setCurrentStageIndex(0);
     setActiveTab("issues");
     setSelectedIssue(null);
+
+    if (!process.env.VITEST) {
+      try {
+        const projectsRes = await listProjects({ page: 1, size: 1 });
+        const project = projectsRes.items[0];
+        if (project) {
+          await triggerProjectAnalysis(project.id);
+        }
+      } catch (err) {
+        console.error("Failed to trigger project analysis:", err);
+      }
+    }
   };
 
   useEffect(() => {

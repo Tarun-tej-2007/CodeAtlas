@@ -1,5 +1,5 @@
 import { ArchitectureStrength } from "@/types/ai-architecture-review-ui";
-import { ShieldCheck, ChevronRight } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 interface ArchitectureStrengthsProps {
   strengths: ArchitectureStrength[];

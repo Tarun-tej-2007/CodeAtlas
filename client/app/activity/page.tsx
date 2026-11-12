@@ -131,7 +131,7 @@ export default function ActivityPage() {
     }, 1200);
   };
 
-  const handleExport = (format: string, scope: string) => {
+  const handleExport = () => {
     setExportSuccess(true);
     setTimeout(() => setExportSuccess(false), 3000);
   };

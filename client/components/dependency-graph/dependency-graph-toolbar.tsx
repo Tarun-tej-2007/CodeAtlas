@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Network, Maximize, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Search, Maximize, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
 interface DependencyGraphToolbarProps {
   searchQuery: string;

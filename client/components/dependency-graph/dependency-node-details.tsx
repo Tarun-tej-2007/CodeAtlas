@@ -1,7 +1,7 @@
 "use client";
 
-import { DependencyNode, DependencyGraphData } from "@/types/dependency-graph-ui";
-import { X, Layers, Code2, AlertTriangle, FileCode } from "lucide-react";
+import { DependencyGraphData } from "@/types/dependency-graph-ui";
+import { X, Layers, FileCode } from "lucide-react";
 
 interface DependencyNodeDetailsProps {
   nodeId: string;
@@ -49,6 +49,9 @@ export function DependencyNodeDetails({ nodeId, data, onClose }: DependencyNodeD
             </span>
             <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded border border-[#1E293B] bg-[#141E2E] text-[#94A3B8]">
               {node.layer}
+            </span>
+            <span className={`text-[11px] font-medium px-2 py-0.5 rounded border border-[#1E293B] bg-[#141E2E] ${getRiskColor(node.risk)}`}>
+              {node.risk} Risk
             </span>
           </div>
         </div>

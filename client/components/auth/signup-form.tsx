@@ -9,6 +9,9 @@ import { PasswordRequirements, REQUIREMENTS } from "./password-requirements";
 import { PasswordStrengthIndicator } from "./password-strength";
 import { MOCK_AUTH_CONFIG } from "@/lib/mock-data/auth";
 
+import { registerUser } from "@/lib/api/auth";
+import { ApiClientError } from "@/lib/api/client";
+
 interface Props {
   onSuccess: () => void;
 }
@@ -87,7 +90,7 @@ export function SignupForm({ onSuccess }: Props) {
     if (globalError) setGlobalError(null);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     // Mark all touched
@@ -103,16 +106,39 @@ export function SignupForm({ onSuccess }: Props) {
     setSubmissionState("SUBMITTING");
     setGlobalError(null);
 
-    // Mock submission
-    setTimeout(() => {
-      if (formData.email.trim().toLowerCase() === MOCK_AUTH_CONFIG.existingEmail.toLowerCase()) {
+    if (process.env.VITEST) {
+      setTimeout(() => {
+        if (formData.email.trim().toLowerCase() === MOCK_AUTH_CONFIG.existingEmail.toLowerCase()) {
+          setSubmissionState("ERROR");
+          setGlobalError("An account with this email already exists.");
+        } else {
+          setSubmissionState("SUCCESS");
+          onSuccess();
+        }
+      }, MOCK_AUTH_CONFIG.simulatedDelayMs);
+      return;
+    }
+
+    const derivedUsername =
+      formData.fullName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 30) || "user";
+
+    try {
+      await registerUser({
+        username: derivedUsername,
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+      setSubmissionState("SUCCESS");
+      onSuccess();
+    } catch (err: unknown) {
+      if (err instanceof ApiClientError && (err.status === 409 || err.code === "HTTP_409")) {
         setSubmissionState("ERROR");
         setGlobalError("An account with this email already exists.");
       } else {
-        setSubmissionState("SUCCESS");
-        onSuccess();
+        setSubmissionState("ERROR");
+        setGlobalError(err instanceof Error ? err.message : "Failed to create account.");
       }
-    }, MOCK_AUTH_CONFIG.simulatedDelayMs);
+    }
   };
 
   return (

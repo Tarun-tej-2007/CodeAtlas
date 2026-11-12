@@ -1,5 +1,5 @@
 import { GovernanceViolation, GovernancePolicy } from "@/types/governance-ui";
-import { X, AlertTriangle, Layers, GitMerge, FileText, CheckCircle2, ShieldAlert } from "lucide-react";
+import { X, Layers, GitMerge, CheckCircle2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
 interface GovernanceViolationDetailsProps {

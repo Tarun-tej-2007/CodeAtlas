@@ -1,4 +1,4 @@
-import { ReportFilterState } from "@/types/reports-ui";
+import { ReportFilterState, ReportType, ReportStatus, ReportFormat } from "@/types/reports-ui";
 import { Search } from "lucide-react";
 
 interface ReportFiltersProps {
@@ -23,7 +23,7 @@ export function ReportFilters({ filters, onFilterChange }: ReportFiltersProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <select
           value={filters.type}
-          onChange={(e) => onFilterChange({ type: e.target.value as any })}
+          onChange={(e) => onFilterChange({ type: e.target.value as ReportType | "ALL" })}
           className="bg-[#080D18] border border-[#1E293B] rounded-md px-3 py-1.5 text-sm text-[#CBD5E1] focus:outline-none focus:border-[#3B82F6]"
         >
           <option value="ALL">All Types</option>
@@ -39,7 +39,7 @@ export function ReportFilters({ filters, onFilterChange }: ReportFiltersProps) {
         
         <select
           value={filters.status}
-          onChange={(e) => onFilterChange({ status: e.target.value as any })}
+          onChange={(e) => onFilterChange({ status: e.target.value as ReportStatus | "ALL" })}
           className="bg-[#080D18] border border-[#1E293B] rounded-md px-3 py-1.5 text-sm text-[#CBD5E1] focus:outline-none focus:border-[#3B82F6]"
         >
           <option value="ALL">All Statuses</option>
@@ -52,7 +52,7 @@ export function ReportFilters({ filters, onFilterChange }: ReportFiltersProps) {
         
         <select
           value={filters.format}
-          onChange={(e) => onFilterChange({ format: e.target.value as any })}
+          onChange={(e) => onFilterChange({ format: e.target.value as ReportFormat | "ALL" })}
           className="bg-[#080D18] border border-[#1E293B] rounded-md px-3 py-1.5 text-sm text-[#CBD5E1] focus:outline-none focus:border-[#3B82F6]"
         >
           <option value="ALL">All Formats</option>
@@ -63,7 +63,7 @@ export function ReportFilters({ filters, onFilterChange }: ReportFiltersProps) {
         
         <select
           value={filters.dateRange}
-          onChange={(e) => onFilterChange({ dateRange: e.target.value as any })}
+          onChange={(e) => onFilterChange({ dateRange: e.target.value as ReportFilterState["dateRange"] })}
           className="bg-[#080D18] border border-[#1E293B] rounded-md px-3 py-1.5 text-sm text-[#CBD5E1] focus:outline-none focus:border-[#3B82F6]"
         >
           <option value="ALL">All Time</option>

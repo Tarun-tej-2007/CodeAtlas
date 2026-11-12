@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Play, Clock, ArrowUpRight, Activity } from "lucide-react";
 
 interface ArchitectureEvolutionHeaderProps {

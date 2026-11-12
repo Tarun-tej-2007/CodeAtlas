@@ -1,16 +1,17 @@
-import { ReportFormat, ReportType } from "@/types/reports-ui";
+import { ReportFormat, ReportType, ReportGenerationOptions } from "@/types/reports-ui";
 import { X, Play } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface ReportGeneratorProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (type: ReportType, format: ReportFormat, options: any) => void;
+  onGenerate: (type: ReportType, format: ReportFormat, options: ReportGenerationOptions) => void;
   defaultType?: ReportType;
 }
 
 export function ReportGenerator({ isOpen, onClose, onGenerate, defaultType = "COMPREHENSIVE" }: ReportGeneratorProps) {
   const [type, setType] = useState<ReportType>(defaultType);
+  const [prevDefaultType, setPrevDefaultType] = useState(defaultType);
   const [format, setFormat] = useState<ReportFormat>("PDF");
   const [scope, setScope] = useState("Entire Repository");
   const [options, setOptions] = useState({
@@ -21,10 +22,11 @@ export function ReportGenerator({ isOpen, onClose, onGenerate, defaultType = "CO
     includeTechnicalDebt: true,
   });
 
-  // Update type if defaultType prop changes (e.g. from "Generate Again")
-  useEffect(() => {
+  // Adjust state during render when defaultType prop changes
+  if (defaultType !== prevDefaultType) {
+    setPrevDefaultType(defaultType);
     setType(defaultType);
-  }, [defaultType]);
+  }
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {

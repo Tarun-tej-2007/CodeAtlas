@@ -29,7 +29,7 @@ export default function ReportsPage() {
   const [reports, setReports] = useState(MOCK_REPORTS);
   const [stats, setStats] = useState(MOCK_REPORT_STATS);
   const [activity, setActivity] = useState(MOCK_REPORT_ACTIVITY);
-  const [history, setHistory] = useState(MOCK_REPORT_HISTORY);
+  const [history] = useState(MOCK_REPORT_HISTORY);
   
   // Modals state
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
@@ -97,7 +97,7 @@ export default function ReportsPage() {
     setIsGeneratorOpen(true);
   };
 
-  const handleStartGeneration = (type: ReportType, format: ReportFormat, options: any) => {
+  const handleStartGeneration = (type: ReportType, format: ReportFormat) => {
     // We update stats locally for demonstration
     setStats(prev => ({
       ...prev,
@@ -126,38 +126,6 @@ export default function ReportsPage() {
     
     setReports(prev => [newReport, ...prev]);
     setIsRunning(true);
-  };
-
-  const handleGenerationComplete = () => {
-    setIsRunning(false);
-    
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) + ', ' + 
-                    now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    
-    // Update the generating report to completed
-    setReports(prev => {
-      const copy = [...prev];
-      if (copy.length > 0 && copy[0].status === "GENERATING") {
-        copy[0] = {
-          ...copy[0],
-          status: "COMPLETED",
-          score: Math.floor(Math.random() * 15) + 80, // deterministically mock later, wait, requirements said no Math.random. Okay, I'll just hardcode 90.
-          generatedAt: dateStr,
-          duration: "45s",
-          coverage: 95,
-          summary: "Newly generated report successfully completed.",
-          findingsCount: 5
-        };
-      }
-      return copy;
-    });
-    
-    setStats(prev => ({
-      ...prev,
-      completed: prev.completed + 1,
-      inProgress: Math.max(0, prev.inProgress - 1)
-    }));
   };
 
   // Ensure deterministic generation
