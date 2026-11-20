@@ -52,7 +52,7 @@ class TestDependencyGraphBuilder(unittest.TestCase):
             kind=SymbolKind.FUNCTION,
             location=self.loc_b,
         )
-
+    ##failed test case
     def test_successful_graph_construction_and_edges(self) -> None:
         # File A exports MyClass, imports nothing
         exp_class = ExportDeclaration(exported_name="MyClass", local_symbol_id="sym-class-a", location=self.loc_a)
