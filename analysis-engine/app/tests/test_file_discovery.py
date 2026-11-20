@@ -29,6 +29,8 @@ class TestFileDiscovery(unittest.TestCase):
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
+
+## failed test ccase
     def test_discover_files_recursively_and_metadata(self) -> None:
         # Create nested directory structure
         src_dir = self.root_path / "src"
@@ -108,6 +110,8 @@ class TestFileDiscovery(unittest.TestCase):
         self.assertEqual(len(result.files), 1)
         self.assertEqual(str(result.files[0].relative_path), "index.ts")
 
+
+    ##failed test case
     def test_custom_ignored_directories(self) -> None:
         custom_service = FileDiscoveryService(ignored_directories={"ignore_me"})
         
